@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../auth/presentation/login_screen.dart';
 import '../../home/presentation/home_screen.dart';
+import '../../list/data/shopping_list_repository.dart';
 import '../../list/presentation/list_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -138,8 +139,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _ProfileOptionRow(
                 icon: Icons.shopping_basket_rounded,
                 title: 'My shopping list',
-                subtitle: '5 items ready',
-                onTap: () {},
+                subtitle:
+                    '${ShoppingListRepository.instance.totalRemainingCount} items to buy',
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const ListScreen()),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               _ProfileOptionRow(
