@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../donations/data/donation_repository.dart';
+import '../../donations/presentation/create_donation_screen.dart';
 import '../data/fridge_repository.dart';
 import '../domain/food_item.dart';
 import '../domain/fridge_formatters.dart';
@@ -14,10 +16,34 @@ class FoodDetailsScreen extends StatelessWidget {
     super.key,
     required this.repository,
     required this.foodId,
+    this.donationRepository,
   });
 
   final FridgeRepository repository;
   final String foodId;
+
+  /// Defaults to [DonationRepository.instance] (Membre 3, "Donate" button).
+  final DonationRepository? donationRepository;
+
+  Future<void> _donate(BuildContext context, FoodItem item) async {
+    final name = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => CreateDonationScreen(
+          repository: donationRepository ?? DonationRepository.instance,
+          initialFoodId: item.id,
+        ),
+      ),
+    );
+    if (name == null || !context.mounted) {
+      return;
+    }
+    if (repository.itemById(item.id) == null) {
+      // Everything was donated: the food left the fridge.
+      Navigator.of(context).pop('$name offered for donation');
+      return;
+    }
+    _showSnackBar(context, '$name offered for donation');
+  }
 
   Future<void> _consume(BuildContext context, FoodItem item) async {
     final amount = await showConsumeDialog(context, item);
@@ -350,6 +376,30 @@ class FoodDetailsScreen extends StatelessWidget {
           ),
         ],
       ),
+      if (!item.isExpired(now)) ...[
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: OutlinedButton.icon(
+            key: const ValueKey('donate-food-button'),
+            onPressed: () => _donate(context, item),
+            icon: const Icon(Icons.volunteer_activism_rounded),
+            label: const Text(
+              'Donate',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF2E7D32),
+              backgroundColor: const Color(0xFFE8F5E9),
+              side: BorderSide.none,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
+        ),
+      ],
     ];
   }
 }

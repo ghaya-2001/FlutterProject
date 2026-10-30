@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../auth/presentation/login_screen.dart';
+import '../../donations/data/donation_repository.dart';
+import '../../donations/presentation/donation_history_screen.dart';
 import '../../home/presentation/home_screen.dart';
+import '../../list/data/shopping_list_repository.dart';
 import '../../list/presentation/list_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -99,10 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 6),
                     const Text(
                       'Food hero',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -138,8 +138,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _ProfileOptionRow(
                 icon: Icons.shopping_basket_rounded,
                 title: 'My shopping list',
-                subtitle: '5 items ready',
-                onTap: () {},
+                subtitle:
+                    '${ShoppingListRepository.instance.totalRemainingCount} items to buy',
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const ListScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ProfileOptionRow(
+                icon: Icons.volunteer_activism_rounded,
+                title: 'My donations',
+                subtitle:
+                    '${DonationRepository.instance.collectedCount} collected · history',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const DonationHistoryScreen(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               _ProfileOptionRow(
@@ -194,10 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: const Icon(Icons.logout_rounded),
                   label: const Text(
                     'Logout',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E7D32),
@@ -221,7 +237,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           if (index == 0) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const FoodSaverHomePage()),
+              MaterialPageRoute(
+                builder: (context) => const FoodSaverHomePage(),
+              ),
             );
           }
 
@@ -233,9 +251,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.kitchen_outlined), label: 'Fridge'),
-          NavigationDestination(icon: Icon(Icons.list_alt_outlined), label: 'List'),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
+          NavigationDestination(
+            icon: Icon(Icons.kitchen_outlined),
+            label: 'Fridge',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.list_alt_outlined),
+            label: 'List',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
+          ),
         ],
       ),
     );
@@ -271,10 +298,7 @@ class _ProfileStatCard extends StatelessWidget {
               color: color,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.eco_rounded,
-              color: Color(0xFF1B1B1B),
-            ),
+            child: const Icon(Icons.eco_rounded, color: Color(0xFF1B1B1B)),
           ),
           const SizedBox(height: 14),
           Text(
@@ -288,10 +312,7 @@ class _ProfileStatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.black54,
-            ),
+            style: const TextStyle(fontSize: 13, color: Colors.black54),
           ),
         ],
       ),
@@ -350,18 +371,12 @@ class _ProfileOptionRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                    ),
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
                   ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFF2E7D32),
-            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF2E7D32)),
           ],
         ),
       ),
