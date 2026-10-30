@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../chatbot/presentation/chatbot_screen.dart';
+import '../../donations/data/donation_repository.dart';
+import '../../donations/presentation/donations_screen.dart';
+import '../../expiry/domain/expiry_alerts.dart';
+import '../../expiry/presentation/expiring_soon_screen.dart';
+import '../../fridge/data/fridge_repository.dart';
+import '../../fridge/domain/fridge_formatters.dart';
+import '../../fridge/presentation/food_details_screen.dart';
 import '../../fridge/presentation/fridge_screen.dart';
 import '../../list/presentation/list_screen.dart';
+import '../../notifications/data/notification_repository.dart';
+import '../../notifications/presentation/notifications_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 
 class FoodSaverHomePage extends StatefulWidget {
@@ -13,6 +23,10 @@ class FoodSaverHomePage extends StatefulWidget {
 
 class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
   int _selectedIndex = 0;
+
+  void _open(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => screen));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +46,7 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
                       children: const [
                         Text(
                           'Good morning,',
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: 16,
-                          ),
+                          style: TextStyle(color: Colors.black54, fontSize: 16),
                         ),
                         SizedBox(height: 4),
                         Text(
@@ -48,23 +59,40 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
                         ),
                       ],
                     ),
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x14000000),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.notifications_none,
-                        color: Color(0xFF2E7D32),
+                    InkWell(
+                      key: const ValueKey('home-notifications-button'),
+                      onTap: () => _open(const NotificationsScreen()),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ListenableBuilder(
+                          listenable: NotificationRepository.instance,
+                          builder: (context, _) {
+                            final unread =
+                                NotificationRepository.instance.unreadCount;
+                            return Badge(
+                              isLabelVisible: unread > 0,
+                              label: Text('$unread'),
+                              backgroundColor: const Color(0xFFE65100),
+                              child: const Icon(
+                                Icons.notifications_none,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ],
@@ -170,6 +198,40 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ListenableBuilder(
+                        listenable: DonationRepository.instance,
+                        builder: (context, _) {
+                          final requests =
+                              DonationRepository.instance.pendingRequestCount;
+                          return _ActionCard(
+                            title: 'Donations',
+                            subtitle: requests == 0
+                                ? 'Share your food'
+                                : '$requests new '
+                                      '${requests == 1 ? 'request' : 'requests'}',
+                            icon: Icons.volunteer_activism_rounded,
+                            color: const Color(0xFFC8E6C9),
+                            onTap: () => _open(const DonationsScreen()),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _ActionCard(
+                        title: 'Assistant',
+                        subtitle: 'Ask a question',
+                        icon: Icons.chat_bubble_outline_rounded,
+                        color: const Color(0xFFBBDEFB),
+                        onTap: () => _open(const ChatbotScreen()),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 22),
                 Container(
                   width: double.infinity,
@@ -185,48 +247,63 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
                       ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
-                            'Expiring soon',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1B1B1B),
-                            ),
+                  // Live data from the fridge (Membre 4: Expiring soon).
+                  child: ListenableBuilder(
+                    listenable: FridgeRepository.instance,
+                    builder: (context, _) {
+                      final fridge = FridgeRepository.instance;
+                      final soon = expiringSoon(fridge.items, fridge.now);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Expiring soon',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1B1B1B),
+                                ),
+                              ),
+                              TextButton(
+                                key: const ValueKey('home-expiring-view-all'),
+                                onPressed: () =>
+                                    _open(const ExpiringSoonScreen()),
+                                child: const Text(
+                                  'View all',
+                                  style: TextStyle(
+                                    color: Color(0xFF2E7D32),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'View all',
-                            style: TextStyle(
-                              color: Color(0xFF2E7D32),
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(height: 6),
+                          if (soon.isEmpty)
+                            const Text(
+                              'Nothing expires in the next 7 days.',
+                              style: TextStyle(color: Colors.black54),
                             ),
-                          ),
+                          for (final item in soon.take(3)) ...[
+                            _FoodItemRow(
+                              name: item.name,
+                              detail: daysLeftLabel(item, fridge.now),
+                              color: statusColor(item.status(fridge.now)),
+                              onPressed: () => _open(
+                                FoodDetailsScreen(
+                                  repository: fridge,
+                                  foodId: item.id,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                         ],
-                      ),
-                      const SizedBox(height: 14),
-                      const _FoodItemRow(
-                        name: 'Spinach',
-                        detail: 'Expires in 1 day',
-                        color: Color(0xFF8BC34A),
-                      ),
-                      const SizedBox(height: 12),
-                      const _FoodItemRow(
-                        name: 'Yogurt',
-                        detail: 'Expires in 2 days',
-                        color: Color(0xFFFFCC80),
-                      ),
-                      const SizedBox(height: 12),
-                      const _FoodItemRow(
-                        name: 'Tomatoes',
-                        detail: 'Best before today',
-                        color: Color(0xFFFFAB91),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -248,9 +325,9 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
           }
 
           if (index == 2) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const ListScreen()),
-            );
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (context) => const ListScreen()));
           }
 
           if (index == 3) {
@@ -261,9 +338,18 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
         },
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.kitchen_outlined), label: 'Fridge'),
-          NavigationDestination(icon: Icon(Icons.list_alt_outlined), label: 'List'),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
+          NavigationDestination(
+            icon: Icon(Icons.kitchen_outlined),
+            label: 'Fridge',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.list_alt_outlined),
+            label: 'List',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
+          ),
         ],
       ),
     );
@@ -276,51 +362,54 @@ class _ActionCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(14),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: const Color(0xFF1B1B1B)),
             ),
-            child: Icon(icon, color: const Color(0xFF1B1B1B)),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1B1B1B),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1B1B1B),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.black54,
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(fontSize: 13, color: Colors.black54),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -331,11 +420,13 @@ class _FoodItemRow extends StatelessWidget {
     required this.name,
     required this.detail,
     required this.color,
+    this.onPressed,
   });
 
   final String name;
   final String detail;
   final Color color;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -364,16 +455,13 @@ class _FoodItemRow extends StatelessWidget {
               ),
               Text(
                 detail,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Colors.black54,
-                ),
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
               ),
             ],
           ),
         ),
         TextButton(
-          onPressed: () {},
+          onPressed: onPressed ?? () {},
           child: const Text(
             'Use now',
             style: TextStyle(
