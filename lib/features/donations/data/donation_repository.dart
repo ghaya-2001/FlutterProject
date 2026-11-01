@@ -144,8 +144,8 @@ class DonationRepository extends ChangeNotifier {
       createdAt: now,
       description: description.trim(),
     );
-    // The donated part leaves the fridge stock.
-    fridge.consume(food.id, quantity);
+    // The donated part leaves the fridge stock (not counted as eaten).
+    fridge.consume(food.id, quantity, record: false);
     _donations.add(donation);
     notifyListeners();
     _sync(() => remote!.save(donation));

@@ -9,6 +9,7 @@ import '../domain/food_item.dart';
 import '../domain/fridge_formatters.dart';
 import 'add_food_screen.dart';
 import 'food_details_screen.dart';
+import 'fridge_stats_screen.dart';
 import 'widgets/name_input_dialog.dart';
 
 class FridgeScreen extends StatefulWidget {
@@ -62,6 +63,14 @@ class _FridgeScreenState extends State<FridgeScreen> {
     if (message != null && mounted) {
       _showSnackBar(message);
     }
+  }
+
+  void _openStats() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => FridgeStatsScreen(repository: _repository),
+      ),
+    );
   }
 
   void _deleteFood(FoodItem item) {
@@ -148,6 +157,12 @@ class _FridgeScreenState extends State<FridgeScreen> {
                         color: Color(0xFF1B1B1B),
                       ),
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Anti-waste stats',
+                    onPressed: _openStats,
+                    icon: const Icon(Icons.insights_rounded),
+                    color: const Color(0xFF2E7D32),
                   ),
                   IconButton(
                     tooltip: 'Manage categories',
@@ -247,7 +262,14 @@ class _FridgeScreenState extends State<FridgeScreen> {
         const SizedBox(height: 10),
         _buildSortSelector(),
         const SizedBox(height: 18),
-        if (_repository.totalCount == 0)
+        if (_repository.isLoading && _repository.totalCount == 0)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(
+              child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+            ),
+          )
+        else if (_repository.totalCount == 0)
           _EmptyState(
             icon: Icons.kitchen_rounded,
             title: 'Your fridge is empty',
@@ -509,6 +531,31 @@ class _SummaryCard extends StatelessWidget {
               ),
             ],
           ),
+          if (repository.isSynced) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  repository.isLoading
+                      ? Icons.cloud_sync_rounded
+                      : Icons.cloud_done_rounded,
+                  size: 16,
+                  color: const Color(0xFF00838F),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  repository.isLoading
+                      ? 'Syncing with the cloud...'
+                      : 'Synced live with the cloud',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF00838F),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
