@@ -106,6 +106,41 @@ class FoodDetailsScreen extends StatelessWidget {
     Navigator.of(context).pop('${item.name} deleted');
   }
 
+  Future<void> _throwAway(BuildContext context, FoodItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Throw away?'),
+        content: Text(
+          '${item.name} will be removed and counted as wasted in your '
+          'anti-waste stats.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.black54),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'Throw away',
+              style: TextStyle(color: Color(0xFFC62828)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    repository.throwAway(item.id);
+    Navigator.of(context).pop('${item.name} thrown away');
+  }
+
   void _showSnackBar(BuildContext context, String message) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
@@ -392,6 +427,29 @@ class FoodDetailsScreen extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF2E7D32),
               backgroundColor: const Color(0xFFE8F5E9),
+              side: BorderSide.none,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
+        ),
+      ] else ...[
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: OutlinedButton.icon(
+            key: const ValueKey('throw-away-button'),
+            onPressed: () => _throwAway(context, item),
+            icon: const Icon(Icons.delete_sweep_rounded),
+            label: const Text(
+              'Throw away',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFC62828),
+              backgroundColor: const Color(0xFFFFEBEE),
               side: BorderSide.none,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),

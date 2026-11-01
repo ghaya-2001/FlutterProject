@@ -23,8 +23,8 @@ Code: `lib/features/fridge/`
 | Folder | Content |
 | --- | --- |
 | `domain/` | `FoodItem`, `FoodCategory`, expiry status and formatting helpers |
-| `data/` | `FridgeRepository` (ChangeNotifier, in-memory store) |
-| `presentation/` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen` |
+| `data/` | `FridgeRepository` (ChangeNotifier), `FridgeFirestore` (Cloud Firestore) |
+| `presentation/` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
 
 | Feature (cahier des charges) | Where |
 | --- | --- |
@@ -42,7 +42,12 @@ Code: `lib/features/fridge/`
 | Mise à jour du stock après consommation | Food Details → Consume (removed automatically when finished) |
 | Consultation des détails d'un aliment | Tap a food → Food Details |
 
-Tests: `test/features/fridge/`
+| Synchronisation temps réel (Firestore) | The fridge is listened to with Firestore snapshots: a change on one phone appears on the others; "Synced live with the cloud" badge |
+| Historique de consommation | Every consumption and every thrown away food is saved in `fridge_history` |
+| Statistiques anti-gaspillage | Fridge chart icon → anti-waste score, eaten / wasted, days without waste, last 7 days chart, most wasted categories, recent activity |
+| Aliments jetés | Expired food → Food Details → Throw away (counted as waste; Delete stays for corrections) |
+
+Tests: `test/features/fridge/` (including `fridge_firestore_test.dart` with a fake Firestore and `fridge_stats_test.dart`)
 
 ## Module 4 — Shopping list (Gestion de la Liste de Courses)
 
@@ -108,14 +113,15 @@ Android: notifications need the `POST_NOTIFICATIONS` permission and core library
 
 Tests: `test/features/donations/`, `test/features/expiry/`, `test/features/notifications/`, `test/features/chatbot/`
 
-## Base de données — Firestore (Membres 3 et 4)
+## Base de données — Firestore (Membres 2, 3 et 4)
 
-Shopping lists, donations and notifications are saved in **Cloud Firestore**.
-The fridge (Membre 2) is still in memory.
+The fridge, shopping lists, donations and notifications are saved in **Cloud Firestore**.
 
 | Collection | Content | Code |
 | --- | --- | --- |
-| `users/{userId}` | `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
+| `users/{userId}` | `customFoodCategories`, `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
+| `users/{userId}/fridge_items/{id}` | `name`, `category`, `quantity`, `unit`, `expiryDate`, `addedAt`, `note` (listened to in real time) | `lib/features/fridge/data/fridge_firestore.dart` |
+| `users/{userId}/fridge_history/{id}` | `type` (consumed / wasted), `foodName`, `category`, `quantity`, `unit`, `at` | `lib/features/fridge/data/fridge_firestore.dart` |
 | `users/{userId}/shopping_lists/{listId}` | `name`, `createdAt`, `items: [...]` | `lib/features/list/data/shopping_list_firestore.dart` |
 | `users/{userId}/notifications/{id}` | donation events: `type`, `title`, `body`, `donationId`, `createdAt` | `lib/features/notifications/data/notification_firestore.dart` |
 | `donations/{donationId}` | `donorId`, `foodName`, `category`, `quantity`, `unit`, `expiryDate`, `status`, `requests: [...]` | `lib/features/donations/data/donation_firestore.dart` |
