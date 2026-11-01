@@ -13,7 +13,8 @@ This file describes how the code is organised and how the UI is built. For the f
 | Framework | Flutter, Dart SDK `^3.13.5`, Material 3 |
 | State management | Plain `ChangeNotifier` singletons + `ListenableBuilder` (no Provider / Riverpod / Bloc) |
 | Navigation | Imperative `Navigator` + `MaterialPageRoute` (no named routes, no go_router) |
-| Backend | Firebase: `firebase_core`, `cloud_firestore` (project `foodsaver-83ca2`) |
+| Backend | Firebase: `firebase_core`, `cloud_firestore`, `firebase_auth` (project `foodsaver-83ca2`) |
+| Images | `image_picker` (profile photo, stored as base64 in Firestore) |
 | Notifications | `flutter_local_notifications` + `timezone` (local scheduling, no server) |
 | Animations | `lottie` (`assets/animations/food_saver.json`) |
 | Lints | `flutter_lints` (default rule set, platform folders excluded) |
@@ -56,7 +57,7 @@ features/<feature>/
 | Feature | Owner | domain | data | presentation |
 | --- | --- | --- | --- | --- |
 | `welcome` | — | — | — | `WelcomeScreen` |
-| `auth` | Membre 1 | — | — | `LoginScreen` (UI only, no real auth yet) |
+| `auth` | Membre 1 | `AppUser`, `AuthFailure`, form validators | `AuthRepository`, `AuthFirebase` | `LoginScreen` (UI not yet connected to `AuthRepository`) |
 | `home` | — | — | — | `FoodSaverHomePage` (dashboard + bottom nav) |
 | `fridge` | Membre 2 | `FoodItem`, `FoodCategory`, `FridgeEvent`, `FridgeStats`, formatters | `FridgeRepository`, `FridgeFirestore` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
 | `donations` | Membre 3 | `Donation`, `DonationRequest`, `Beneficiary` | `DonationRepository`, `DonationFirestore` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen` |
@@ -64,7 +65,7 @@ features/<feature>/
 | `expiry` | Membre 4 | `expiry_alerts.dart` (7d / 3d / same-day rules) | — (computed from the fridge) | `ExpiringSoonScreen` |
 | `notifications` | Membre 4 | `AppNotification` | `NotificationRepository`, `NotificationFirestore`, `NotificationService` | `NotificationsScreen` |
 | `chatbot` | Membre 4 | `chatbot_engine.dart` (predefined questions + keyword matching) | — | `ChatbotScreen` |
-| `profile` | — | — | — | `ProfileScreen` |
+| `profile` | Membre 1 | `UserProfile`, `UserSettings` | `UserProfileRepository`, `UserProfileFirestore` | `ProfileScreen` |
 
 The biggest files are `list_screen.dart` (~1,200 lines) and `fridge_screen.dart` (~1,000 lines). `lib/` holds about 12,000 lines of Dart in total.
 
@@ -105,7 +106,7 @@ Each `*Firestore` class wraps one part of the database and holds top-level `xToM
 
 | Path | Content |
 | --- | --- |
-| `users/{userId}` | custom food/shopping categories, selected shopping list, read notification ids |
+| `users/{userId}` | profile (`displayName`, `email`, `photo`, `createdAt`, `settings`), custom food/shopping categories, selected shopping list, read notification ids |
 | `users/{userId}/fridge_items/{id}` | one document per food |
 | `users/{userId}/fridge_history/{id}` | consumed / wasted events (stats) |
 | `users/{userId}/shopping_lists/{listId}` | one document per list, items embedded as an array |
@@ -245,7 +246,7 @@ Android needs core library desugaring (already enabled in `android/app/build.gra
 
 ## 7. Known gaps / TODOs
 
-- **No authentication.** `LoginScreen` is UI only, and all data is stored under `users/demo-user`. Replace `currentUserId` with `FirebaseAuth.instance.currentUser!.uid` and switch to the auth-based rules commented in `firestore.rules`.
+- **Authentication isn't connected yet.** `AuthRepository` and `UserProfileRepository` exist, but `LoginScreen` doesn't use them yet, and all module data is still stored under `users/demo-user`. Replace `currentUserId` with `FirebaseAuth.instance.currentUser!.uid` and switch to the auth-based rules commented in `firestore.rules`.
 - **Firestore rules are fully open** until 31 Jan 2027.
 - **Placeholder content** on Home and Profile: the user name "Maya", "12 meals protected", the "Fridge: 7 items" / "Recipes: 3 ideas" cards, "128 meals saved", "92% impact", "18 saved recipes". The Recipes feature does not exist yet.
 - **Navigation is duplicated** in each tab screen's `NavigationBar`. On `ProfileScreen` the Fridge tab (index 1) has no handler, and Home *pushes* tab screens, so the back stack grows. A single shell with an `IndexedStack` would fix both.

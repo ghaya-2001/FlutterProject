@@ -95,7 +95,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF2E7D32)),
+                  prefixIcon: const Icon(
+                    Icons.email_outlined,
+                    color: Color(0xFF2E7D32),
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -110,7 +113,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF2E7D32)),
+                  prefixIcon: const Icon(
+                    Icons.lock_outline_rounded,
+                    color: Color(0xFF2E7D32),
+                  ),
                   suffixIcon: IconButton(
                     onPressed: () {
                       setState(() {
@@ -118,7 +124,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       });
                     },
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: const Color(0xFF2E7D32),
                     ),
                   ),
@@ -165,10 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: const Text(
                     'Log In',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

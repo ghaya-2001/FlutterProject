@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Food Saver uses your photos to set your profile picture.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Food Saver uses the camera to take your profile picture.</string>
 </dict>
 </plist>

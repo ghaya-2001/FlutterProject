@@ -9,6 +9,7 @@ Legend: `[x]` done · `[~]` partly done / UI only · `[ ]` not started
 > and donations and the chatbot are extras not assigned to anyone.
 
 Baseline (2026-11-01, `main` @ `2d1bd88`): `flutter analyze` clean · `flutter test` 94 passed, **3 failed** (`test/features/list/list_screen_test.dart`).
+After Phase 0 (`feature/m1-auth-profile`): analyze clean · 129 passed, the same 3 failed.
 
 ---
 
@@ -20,13 +21,16 @@ Baseline (2026-11-01, `main` @ `2d1bd88`): `flutter analyze` clean · `flutter t
 - [x] Profile photo: **compressed image stored in the `users/{uid}` Firestore document** (free Spark plan, kept well under 1 MB)
 - [x] Settings: **notifications on/off**, **change password**, **delete account**
 
-### Phase 0 — Setup
-- [ ] Enable **Email/Password** sign-in in Firebase console (Authentication → Sign-in method)
-- [ ] Add `firebase_auth` and `image_picker` (photo picked at a small size and compressed before saving)
-- [ ] `features/auth/data/auth_repository.dart`: `AuthRepository` (`ChangeNotifier` singleton, nullable remote, works without Firebase in tests), exposing `currentUser`, `authStateChanges`, `signUp`, `signIn`, `sendPasswordReset`, `signOut`
-- [ ] Map `FirebaseAuthException` codes to English messages (wrong password, email in use, weak password, network…)
-- [ ] `features/profile/data/user_profile_repository.dart` + `user_profile_firestore.dart`: profile in `users/{uid}` (`displayName`, `email`, `photo`, `createdAt`, `settings`), merged with the fields other modules already store there
-- [ ] `features/profile/domain/user_profile.dart` + `user_settings.dart` models
+### Phase 0 — Setup ✅ (2026-11-01, branch `feature/m1-auth-profile`)
+- [ ] **(You, in the console)** Enable **Email/Password** sign-in in Firebase console (Authentication → Sign-in method)
+- [x] Add `firebase_auth` and `image_picker`; iOS photo/camera usage descriptions added to `Info.plist`
+- [x] `auth/data/auth_firebase.dart`: `AuthFirebase` wraps `FirebaseAuth` and throws `AuthFailure` instead of Firebase exceptions
+- [x] `auth/data/auth_repository.dart`: `AuthRepository` (`ChangeNotifier` singleton, in-memory accounts when there is no Firebase) with `currentUser`, `isLoading`, `signUp`, `signIn`, `sendPasswordReset`, `sendEmailVerification`, `reloadUser`, `updateDisplayName`, `reauthenticate`, `changePassword`, `deleteAccount`, `signOut`
+- [x] `auth/domain/auth_failure.dart`: Firebase error codes → English messages
+- [x] `auth/domain/auth_validators.dart`: email, password (≥ 6 characters, a letter and a number), confirmation and name validators for the forms
+- [x] `profile/data/user_profile_firestore.dart` + `user_profile_repository.dart`: profile in `users/{uid}` (`displayName`, `email`, `photo`, `createdAt`, `settings.notificationsEnabled`), merged with other modules' fields, created on first sign-in, follows sign-in/sign-out; `deleteUserData` for account deletion
+- [x] `profile/domain/user_profile.dart` + `user_settings.dart` models
+- [x] Tests: `test/features/auth/` + `test/features/profile/` (35 tests)
 
 ### Phase 1 — Screens
 - [ ] **Splash Screen** (new): logo/Lottie, waits for Firebase + auth state, then goes to Home (signed in) or Welcome (signed out)
@@ -59,7 +63,7 @@ Baseline (2026-11-01, `main` @ `2d1bd88`): `flutter analyze` clean · `flutter t
 - [ ] Home header greeting uses the profile name (Home belongs to Membre 5; coordinate)
 
 ### Phase 3 — Tests & docs
-- [ ] `test/features/auth/`: auth repository with a fake remote, error mapping, form validation
+- [x] `test/features/auth/`: auth repository with a fake remote, error mapping, form validation (done in Phase 0)
 - [ ] Widget tests: Splash routing, Login, Register, Reset, Settings, Logout
 - [ ] Update `test/widget_test.dart` (the flow now goes through Splash and real login)
 - [ ] Update `CLAUDE.md`, `PROJECT_OVERVIEW.md` and the README "Membre 1" section
