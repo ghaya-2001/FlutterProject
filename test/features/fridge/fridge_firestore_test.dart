@@ -37,6 +37,19 @@ class FakeFridgeFirestore implements FridgeFirestore {
   Future<FridgeSettings> loadSettings() async =>
       FridgeSettings(customCategories: categories, isSeeded: isSeeded);
 
+  final importedIds = <String>[];
+
+  @override
+  Future<void> importGroceries(
+    List<FoodItem> items,
+    List<String> shoppingItemIds,
+  ) async {
+    for (final item in items) {
+      saved[item.id] = item;
+    }
+    importedIds.addAll(shoppingItemIds);
+  }
+
   @override
   Future<void> saveDemoFoods(List<FoodItem> items) async {
     demoFoods = items;

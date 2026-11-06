@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/fridge_repository.dart';
+import '../domain/achievements.dart';
 import '../domain/food_category.dart';
 import '../domain/fridge_event.dart';
 import '../domain/fridge_formatters.dart';
@@ -75,6 +76,8 @@ class FridgeStatsScreen extends StatelessWidget {
                     const SizedBox(height: 10),
                   ],
                 ],
+                const SizedBox(height: 22),
+                _AchievementsSection(achievements: repository.achievements),
               ],
             );
           },
@@ -126,84 +129,87 @@ class _ScoreCard extends StatelessWidget {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 110,
-            height: 110,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: score / 100),
-              duration: const Duration(milliseconds: 900),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, _) => Stack(
-                fit: StackFit.expand,
-                children: [
-                  CircularProgressIndicator(
-                    value: value,
-                    strokeWidth: 11,
-                    strokeCap: StrokeCap.round,
-                    backgroundColor: Colors.white,
-                    color: color,
-                  ),
-                  Center(
-                    child: Text(
-                      '${(value * 100).round()}%',
-                      key: const ValueKey('anti-waste-score'),
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+          Row(
+            children: [
+              SizedBox(
+                width: 110,
+                height: 110,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: score / 100),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) => Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CircularProgressIndicator(
+                        value: value,
+                        strokeWidth: 11,
+                        strokeCap: StrokeCap.round,
+                        backgroundColor: Colors.white,
                         color: color,
                       ),
-                    ),
+                      Center(
+                        child: Text(
+                          '${(value * 100).round()}%',
+                          key: const ValueKey('anti-waste-score'),
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Anti-waste score',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: _dark,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Foods eaten instead of thrown away',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Pill(
-                      icon: Icons.restaurant_rounded,
-                      label: '${stats.consumedCount} eaten',
-                      color: _green,
+                    const Text(
+                      'Anti-waste score',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _dark,
+                      ),
                     ),
-                    _Pill(
-                      icon: Icons.delete_outline_rounded,
-                      label: '${stats.wastedCount} wasted',
-                      color: _red,
-                    ),
-                    _Pill(
-                      icon: Icons.local_fire_department_rounded,
-                      label:
-                          '$streak ${streak == 1 ? 'day' : 'days'} '
-                          'without waste',
-                      color: const Color(0xFFE65100),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Foods eaten instead of thrown away',
+                      style: TextStyle(fontSize: 13, color: Colors.black54),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _Pill(
+                icon: Icons.restaurant_rounded,
+                label: '${stats.consumedCount} eaten',
+                color: _green,
+              ),
+              _Pill(
+                icon: Icons.delete_outline_rounded,
+                label: '${stats.wastedCount} wasted',
+                color: _red,
+              ),
+              _Pill(
+                icon: Icons.local_fire_department_rounded,
+                label: '$streak ${streak == 1 ? 'day' : 'days'} without waste',
+                color: const Color(0xFFE65100),
+              ),
+            ],
           ),
         ],
       ),
@@ -231,12 +237,15 @@ class _Pill extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: color,
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -548,6 +557,141 @@ class _EventTile extends StatelessWidget {
             formatDate(event.at),
             style: const TextStyle(fontSize: 11, color: Colors.black45),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AchievementsSection extends StatelessWidget {
+  const _AchievementsSection({required this.achievements});
+
+  final List<Achievement> achievements;
+
+  @override
+  Widget build(BuildContext context) {
+    final unlocked = achievements.where((a) => a.isUnlocked).length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Achievements',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: _dark,
+                ),
+              ),
+            ),
+            Text(
+              '$unlocked/${achievements.length} unlocked',
+              key: const ValueKey('achievements-count'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: _green,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        for (final achievement in achievements) ...[
+          _AchievementTile(achievement: achievement),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _AchievementTile extends StatelessWidget {
+  const _AchievementTile({required this.achievement});
+
+  final Achievement achievement;
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFF9A825);
+    final unlocked = achievement.isUnlocked;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: unlocked
+            ? Border.all(color: gold.withValues(alpha: 0.6), width: 1.5)
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: unlocked
+                  ? const LinearGradient(
+                      colors: [Color(0xFFFFE082), Color(0xFFF9A825)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: unlocked ? null : const Color(0xFFEEEEEE),
+            ),
+            child: Icon(
+              unlocked ? achievement.icon : Icons.lock_outline_rounded,
+              color: unlocked ? Colors.white : Colors.black38,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  achievement.title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: unlocked ? _dark : Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  achievement.description,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                if (!unlocked) ...[
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: achievement.progress,
+                      minHeight: 6,
+                      backgroundColor: const Color(0xFFE8F5E9),
+                      color: _green,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          unlocked
+              ? const Icon(Icons.verified_rounded, color: gold)
+              : Text(
+                  '${achievement.current > achievement.goal ? achievement.goal : achievement.current}'
+                  '/${achievement.goal}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black45,
+                  ),
+                ),
         ],
       ),
     );

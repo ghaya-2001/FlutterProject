@@ -16,6 +16,8 @@ class FridgeEvent {
     required this.quantity,
     required this.unit,
     required this.at,
+    this.daysLeft,
+    this.recipe,
   });
 
   final String id;
@@ -25,6 +27,12 @@ class FridgeEvent {
   final double quantity;
   final String unit;
   final DateTime at;
+
+  /// Days the food had left when it was eaten or thrown away.
+  final int? daysLeft;
+
+  /// Name of the recipe the food was cooked in, if any.
+  final String? recipe;
 
   bool get isWaste => type == FridgeEventType.wasted;
 }
