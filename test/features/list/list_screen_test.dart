@@ -16,6 +16,30 @@ void main() {
     );
   }
 
+  /// The screen's lists are built lazily: scroll until [finder] is built
+  /// inside the scrollable that contains [inside] (vertical page by default).
+  Future<void> scrollTo(
+    WidgetTester tester,
+    Finder finder, {
+    Finder? inside,
+    double delta = 200,
+  }) async {
+    final scrollable = inside == null
+        ? find
+              .byWidgetPredicate(
+                (widget) =>
+                    widget is Scrollable &&
+                    widget.axisDirection == AxisDirection.down,
+              )
+              .first
+        : find.ancestor(of: inside, matching: find.byType(Scrollable)).first;
+    // Resolved once: [inside] may itself scroll out of view and be disposed.
+    final fixed = find.byWidget(tester.widget(scrollable));
+    await tester.scrollUntilVisible(finder, delta, scrollable: fixed);
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+  }
+
   setUp(() {
     repository = ShoppingListRepository();
   });
@@ -28,9 +52,11 @@ void main() {
     expect(find.text('Shopping list'), findsOneWidget);
     expect(find.text('Weekly groceries (3)'), findsOneWidget);
     expect(find.text('To buy'), findsOneWidget);
-    expect(find.text('Bought'), findsOneWidget);
     expect(find.text('3 item(s) left to buy'), findsOneWidget);
     expect(find.text('2/5 bought'), findsOneWidget);
+
+    await scrollTo(tester, find.text('Bought'));
+    expect(find.text('Bought'), findsOneWidget);
   });
 
   testWidgets('adds an item through the Add item screen', (tester) async {
@@ -121,7 +147,14 @@ void main() {
   testWidgets('creates a new shopping list', (tester) async {
     await pumpListScreen(tester);
 
-    await tester.tap(find.text('New list'));
+    final newList = find.widgetWithText(ActionChip, 'New list');
+    await scrollTo(
+      tester,
+      newList,
+      inside: find.text('Weekly groceries (3)'),
+      delta: 100,
+    );
+    await tester.tap(newList);
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField), 'Party');
@@ -137,6 +170,7 @@ void main() {
     await pumpListScreen(tester);
 
     final pantryChip = find.widgetWithText(ChoiceChip, 'Pantry');
+    await scrollTo(tester, pantryChip, inside: find.text('All'), delta: 100);
     await tester.tap(pantryChip);
     await tester.pumpAndSettle();
 

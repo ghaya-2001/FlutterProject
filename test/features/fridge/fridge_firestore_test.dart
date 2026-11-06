@@ -12,10 +12,16 @@ import 'package:foodsaver/features/fridge/domain/fridge_event.dart';
 /// In-memory stand-in for Firestore that records every write and lets the
 /// test push snapshots, as if another phone had changed the fridge.
 class FakeFridgeFirestore implements FridgeFirestore {
-  FakeFridgeFirestore({this.categories = const [], this.events = const []});
+  FakeFridgeFirestore({
+    this.categories = const [],
+    this.events = const [],
+    this.isSeeded = true,
+  });
 
   final List<String> categories;
   final List<Map<String, dynamic>> events;
+  bool isSeeded;
+  List<FoodItem>? demoFoods;
   final snapshots = StreamController<List<Map<String, dynamic>>>();
 
   final saved = <String, FoodItem>{};
@@ -28,7 +34,14 @@ class FakeFridgeFirestore implements FridgeFirestore {
   String get userId => 'test-user';
 
   @override
-  Future<List<String>> loadCustomCategories() async => categories;
+  Future<FridgeSettings> loadSettings() async =>
+      FridgeSettings(customCategories: categories, isSeeded: isSeeded);
+
+  @override
+  Future<void> saveDemoFoods(List<FoodItem> items) async {
+    demoFoods = items;
+    isSeeded = true;
+  }
 
   @override
   Future<List<Map<String, dynamic>>> loadHistory() async => events;
@@ -139,6 +152,23 @@ void main() {
       remote.snapshots.add([]);
       await pumpEventQueue();
       expect(repository.isLoading, isFalse);
+    });
+
+    test('a new user gets the demo foods once, saved in Firestore', () async {
+      remote = FakeFridgeFirestore(isSeeded: false);
+      repository = FridgeRepository(clock: () => today, remote: remote);
+      await pumpEventQueue();
+
+      expect(remote.isSeeded, isTrue);
+      expect(remote.demoFoods, isNotEmpty);
+      expect(repository.totalCount, remote.demoFoods!.length);
+
+      // Next start (or another phone): nothing is added again.
+      final again = FakeFridgeFirestore();
+      FridgeRepository(clock: () => today, remote: again);
+      await pumpEventQueue();
+      expect(again.demoFoods, isNull);
+      await again.snapshots.close();
     });
 
     test('loads custom categories and history', () async {
