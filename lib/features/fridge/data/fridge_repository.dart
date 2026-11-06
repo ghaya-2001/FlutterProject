@@ -23,7 +23,7 @@ class FridgeRepository extends ChangeNotifier {
   FridgeRepository({bool seed = true, DateTime Function()? clock, this.remote})
     : _clock = clock ?? DateTime.now {
     if (remote != null) {
-      _connectRemote();
+      _connectRemote(seedNewUser: seed);
     } else if (seed) {
       _seed();
     }
@@ -344,12 +344,20 @@ class FridgeRepository extends ChangeNotifier {
   // Firestore
   // ---------------------------------------------------------------------------
 
-  Future<void> _connectRemote() async {
+  /// [seedNewUser] fills the fridge of a user who never used it with the
+  /// demo foods, so expiry alerts, donations and the chatbot have data.
+  Future<void> _connectRemote({required bool seedNewUser}) async {
     isLoading = true;
     notifyListeners();
     try {
-      for (final name in await remote!.loadCustomCategories()) {
+      final settings = await remote!.loadSettings();
+      for (final name in settings.customCategories) {
         _categoryFor(name);
+      }
+      if (seedNewUser && !settings.isSeeded) {
+        _seed();
+        final demoFoods = List<FoodItem>.of(_items);
+        _sync(() => remote!.saveDemoFoods(demoFoods));
       }
       final events = await remote!.loadHistory();
       // Keep events recorded on this phone while the history was loading.

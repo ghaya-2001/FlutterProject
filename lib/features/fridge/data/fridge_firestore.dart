@@ -5,11 +5,24 @@ import '../domain/food_category.dart';
 import '../domain/food_item.dart';
 import '../domain/fridge_event.dart';
 
+/// What is stored on the user document for the fridge module.
+class FridgeSettings {
+  const FridgeSettings({
+    required this.customCategories,
+    required this.isSeeded,
+  });
+
+  final List<String> customCategories;
+
+  /// True once the demo foods were written for this user.
+  final bool isSeeded;
+}
+
 /// Reads and writes the fridge in Firestore.
 ///
 /// Structure:
 /// ```
-/// users/{userId}                       customFoodCategories
+/// users/{userId}                       customFoodCategories, fridgeSeeded
 /// users/{userId}/fridge_items/{id}     name, category, quantity, unit,
 ///                                      expiryDate, addedAt, note
 /// users/{userId}/fridge_history/{id}   type, foodName, category, quantity,
@@ -36,10 +49,26 @@ class FridgeFirestore {
   CollectionReference<Map<String, dynamic>> get _history =>
       _user.collection('fridge_history');
 
-  Future<List<String>> loadCustomCategories() async {
+  Future<FridgeSettings> loadSettings() async {
     final user = await _user.get();
     final data = user.data() ?? const <String, dynamic>{};
-    return List<String>.from(data['customFoodCategories'] as List? ?? const []);
+    return FridgeSettings(
+      customCategories: List<String>.from(
+        data['customFoodCategories'] as List? ?? const [],
+      ),
+      isSeeded: data['fridgeSeeded'] as bool? ?? false,
+    );
+  }
+
+  /// Writes the demo foods of a new user and remembers it in the same batch,
+  /// so they are added only once (not again after the fridge is emptied).
+  Future<void> saveDemoFoods(List<FoodItem> items) {
+    final batch = _db.batch();
+    for (final item in items) {
+      batch.set(_items.doc(item.id), foodItemToMap(item));
+    }
+    batch.set(_user, {'fridgeSeeded': true}, SetOptions(merge: true));
+    return batch.commit();
   }
 
   /// Every food of the fridge, sent again each time one of them changes

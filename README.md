@@ -119,7 +119,7 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 
 | Collection | Content | Code |
 | --- | --- | --- |
-| `users/{userId}` | `customFoodCategories`, `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
+| `users/{userId}` | `customFoodCategories`, `fridgeSeeded`, `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
 | `users/{userId}/fridge_items/{id}` | `name`, `category`, `quantity`, `unit`, `expiryDate`, `addedAt`, `note` (listened to in real time) | `lib/features/fridge/data/fridge_firestore.dart` |
 | `users/{userId}/fridge_history/{id}` | `type` (consumed / wasted), `foodName`, `category`, `quantity`, `unit`, `at` | `lib/features/fridge/data/fridge_firestore.dart` |
 | `users/{userId}/shopping_lists/{listId}` | `name`, `createdAt`, `items: [...]` | `lib/features/list/data/shopping_list_firestore.dart` |
