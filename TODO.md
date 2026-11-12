@@ -11,6 +11,7 @@ Legend: `[x]` done · `[~]` partly done / UI only · `[ ]` not started
 Baseline (2026-11-01, `main` @ `2d1bd88`): `flutter analyze` clean · `flutter test` 94 passed, **3 failed** (`test/features/list/list_screen_test.dart`).
 After Phase 0 (`feature/m1-auth-profile`): analyze clean · 129 passed, the same 3 failed.
 After Phase 1 (2026-11-12): analyze clean · **166 passed, 0 failed** (the 3 list tests were fixed on `main` by Membre 2).
+After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 
 ---
 
@@ -57,13 +58,17 @@ After Phase 1 (2026-11-12): analyze clean · **166 passed, 0 failed** (the 3 lis
 - [x] **Secure logout**
   - [x] Profile "Verify your email" banner (dismissible, Resend + refresh check, never blocks access)
   - [x] `signOut()` + cancel scheduled notifications + `pushAndRemoveUntil(Welcome)`
-  - [ ] Clear the other modules' in-memory data (needs the Phase 2 `clear()` mechanism)
+  - [x] Clear the other modules in-memory data (`SessionBinder` calls each repository `clear()`)
 
 ### Phase 2 — Integration (the doc lists "Intégration des modules" as shared work: I build the mechanism and the gate, each owner reviews their own module's change)
-- [ ] Replace the `currentUserId = 'demo-user'` constant with the signed-in uid. It is used by `FridgeFirestore`, `ShoppingListFirestore`, `NotificationFirestore` and `DonationRepository`.
-- [ ] Repositories are `static final` singletons created at startup with a fixed user. Add a way to **re-bind on login / reset on logout** (e.g. `bindUser(uid)` / `clear()`), so a second account never sees the first one's data.
-- [ ] Auth gate: no module screen opens without a signed-in user
-- [ ] Switch `firestore.rules` to the auth-based rules (already written as a comment in the file). **Do this last**, after every module uses the real uid
+- [x] Replace the `currentUserId = 'demo-user'` constant with the signed-in uid: `CurrentUser.uid` (`lib/core/session/current_user.dart`), read by `FridgeFirestore`, `ShoppingListFirestore`, `NotificationFirestore` and `DonationRepository` (the `'demo-user'` fallback remains for tests)
+- [x] Re-bind on login / reset on logout: every repository has `connect()` and `clear()`, driven by `SessionBinder` (started in `main.dart`); the app-wide instances use `autoConnect: false`. Tests: `session_binder_test.dart`
+- [x] Auth gate: `_AuthGate` in `app.dart` returns to Welcome if the session ends while the app is open; Splash and logout already route on auth state
+- [~] `firestore.rules` is now the auth-based version **with roles** (old dev rules kept as a comment). **Not tested with the emulator and not deployed**: deploy only after every teammate build uses the real uid and the donor screens follow the new request flow
+- [x] Roles (decided 2026-11-13, beyond the original doc): `user` / `restaurant` / `admin` in `users/{uid}.role`; chosen at Register (user or restaurant + business name), immutable, admin only from the Firebase console; `RoleHome` + `RoleShell` give restaurants and admins their own start screen (placeholder donation tab + Profile). Tests: `user_role_test.dart`
+- [ ] Set the first admin by hand: Firebase console → Firestore → `users/{uid}` → add `role` = `admin`
+- [ ] Clear the other modules in-memory data on logout: done through `SessionBinder`; verify on a real device with two accounts
+- [ ] Edit profile for restaurants: change the business name (not built; the rules allow it)
 - [x] `NotificationService`: cancel/re-schedule hook (`setEnabled`, `cancelAll`; Membre 3: please review) for the Settings toggle, logout and delete account (Membre 3 owns it; add a method only if missing)
 - [ ] Profile stats ("128 meals saved / 92%") stay as placeholders for Membre 5
 - [ ] Home header greeting uses the profile name (Home belongs to Membre 5; coordinate)
@@ -75,6 +80,16 @@ After Phase 1 (2026-11-12): analyze clean · **166 passed, 0 failed** (the 3 lis
 - [ ] Update `CLAUDE.md`, `PROJECT_OVERVIEW.md` and the README "Membre 1" section
 
 ---
+
+## Donations workflow with roles — handoff spec (not assigned)
+Roles exist (see Phase 2 above); the donation screens still follow the old flow where the donor accepts requests on their own donation, and restaurants are `sampleBeneficiaries`. Target flow, agreed 2026-11-13:
+- [ ] A user creates a donation; it appears as available to every restaurant
+- [ ] Restaurants browse available donations and send a request (optional message) from the **Donations** tab of `RoleShell`; the beneficiary is the restaurant account (`businessName`), replacing `sampleBeneficiaries`
+- [ ] The admin sees all pending requests in the **Requests** tab and accepts or refuses; accepting one reserves the donation and refuses the other requests on it
+- [ ] The donor sees the status and gets a notification (rules already allow restaurant/admin to create an event in the donor notifications), then marks the donation collected after the handover (the admin can as a fallback)
+- [ ] Remove the donor-side accept/refuse buttons (the new rules forbid them)
+- [ ] Manual donations without a fridge item ("Donate something else": name, category, quantity, optional expiry; food and pantry items only)
+- [ ] Emulator tests for the donation rules before deploying `firestore.rules`
 
 ## Membre 2 — Fridge management
 Reported done in the README (`lib/features/fridge/`), with Firestore sync and anti-waste stats on top.

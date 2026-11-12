@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'core/firebase/firebase_setup.dart';
+import 'features/auth/data/session_binder.dart';
 import 'features/fridge/data/fridge_repository.dart';
 import 'features/notifications/data/notification_repository.dart';
 import 'features/notifications/data/notification_service.dart';
@@ -29,6 +30,10 @@ Future<void> main() async {
       profiles.settings.notificationsEnabled,
     ),
   );
+
+  // Points every repository at the signed-in account (and empties them on
+  // logout), so accounts never see each other's data.
+  SessionBinder();
 
   runApp(const FoodSaverApp());
 }

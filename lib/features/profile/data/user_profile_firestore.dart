@@ -1,13 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../domain/user_profile.dart';
+import '../domain/user_role.dart';
 import '../domain/user_settings.dart';
 
 /// Reads and writes the user's profile in Firestore.
 ///
 /// Structure:
 /// ```
-/// users/{uid}   displayName, email, photo, createdAt,
+/// users/{uid}   displayName, email, photo, createdAt, role, businessName,
 ///               settings: { notificationsEnabled }
 /// ```
 /// The same document also holds other modules' fields (custom categories,
@@ -110,6 +111,8 @@ Map<String, dynamic> userProfileToMap(UserProfile profile) {
     if (profile.hasPhoto) 'photo': profile.photoBase64,
     'createdAt': Timestamp.fromDate(profile.createdAt),
     'settings': userSettingsToMap(profile.settings),
+    'role': profile.role.name,
+    if (profile.businessName.isNotEmpty) 'businessName': profile.businessName,
   };
 }
 
@@ -132,6 +135,8 @@ UserProfile userProfileFromMap(
     createdAt: createdAt is Timestamp ? createdAt.toDate() : DateTime.now(),
     photoBase64: photo == null || photo.isEmpty ? null : photo,
     settings: userSettingsFromMap(map['settings']),
+    role: UserRole.fromName(map['role'] as String?),
+    businessName: map['businessName'] as String? ?? '',
   );
 }
 

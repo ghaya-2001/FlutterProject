@@ -1,3 +1,4 @@
+import 'user_role.dart';
 import 'user_settings.dart';
 
 /// Longest profile photo accepted, as a base64 string (about 500 KB of image).
@@ -15,6 +16,8 @@ class UserProfile {
     required this.createdAt,
     this.photoBase64,
     this.settings = const UserSettings(),
+    this.role = UserRole.user,
+    this.businessName = '',
   });
 
   final String uid;
@@ -26,6 +29,12 @@ class UserProfile {
   final String? photoBase64;
 
   final UserSettings settings;
+
+  /// Fixed at sign-up; admin is set in the Firebase console.
+  final UserRole role;
+
+  /// Name of the restaurant (restaurants only), used as the beneficiary name.
+  final String businessName;
 
   bool get hasPhoto => photoBase64 != null && photoBase64!.isNotEmpty;
 
@@ -54,6 +63,8 @@ class UserProfile {
       createdAt: createdAt,
       photoBase64: removePhoto ? null : photoBase64 ?? this.photoBase64,
       settings: settings ?? this.settings,
+      role: role,
+      businessName: businessName,
     );
   }
 }

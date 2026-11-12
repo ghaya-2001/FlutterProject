@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:foodsaver/features/auth/data/auth_repository.dart';
 import 'package:foodsaver/main.dart';
 
 void main() {
@@ -88,4 +89,25 @@ void main() {
       expect(find.text('maya@example.com'), findsOneWidget);
     },
   );
+
+  testWidgets('the session ending while the app is open returns to Welcome', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const FoodSaverApp());
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    await AuthRepository.instance.signUp(
+      displayName: 'Gate',
+      email: 'gate@example.com',
+      password: 'secret12',
+    );
+    await tester.pumpAndSettle();
+
+    // e.g. the account was deleted or disabled from another device.
+    await AuthRepository.instance.signOut();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome to Food Saver'), findsOneWidget);
+  });
 }

@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../../home/presentation/home_screen.dart';
+import '../../profile/data/user_profile_repository.dart';
+import '../../profile/domain/user_role.dart';
+import '../../roles/presentation/role_home.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_failure.dart';
 import '../domain/auth_validators.dart';
 import 'widgets/auth_widgets.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key, this.repository});
+  const RegisterScreen({super.key, this.repository, this.profiles});
 
   /// Defaults to [AuthRepository.instance]; injectable for tests.
   final AuthRepository? repository;
+
+  /// Defaults to [UserProfileRepository.instance]; injectable for tests.
+  final UserProfileRepository? profiles;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -22,10 +27,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+  final _businessController = TextEditingController();
+  UserRole _role = UserRole.user;
   bool _loading = false;
   String? _error;
 
   AuthRepository get _auth => widget.repository ?? AuthRepository.instance;
+  UserProfileRepository get _profiles =>
+      widget.profiles ?? UserProfileRepository.instance;
 
   @override
   void dispose() {
@@ -33,6 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
+    _businessController.dispose();
     super.dispose();
   }
 
@@ -45,6 +55,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _error = null;
     });
     try {
+      // The role is fixed at sign-up, so tell the profile before the account exists.
+      _profiles.prepareSignUp(
+        role: _role,
+        businessName: _businessController.text,
+      );
       await _auth.signUp(
         displayName: _nameController.text,
         email: _emailController.text,
@@ -54,14 +69,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       try {
         await _auth.sendEmailVerification();
       } catch (_) {}
+      await _profiles.whenReady();
       if (!mounted) {
         return;
       }
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const FoodSaverHomePage()),
+        MaterialPageRoute(builder: (context) => RoleHome(profiles: _profiles)),
         (route) => false,
       );
     } on AuthFailure catch (failure) {
+      _profiles.cancelSignUp();
       if (mounted) {
         setState(() {
           _loading = false;
@@ -106,6 +123,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 28),
+                SegmentedButton<UserRole>(
+                  key: const ValueKey('register-role-selector'),
+                  segments: [
+                    for (final role in UserRole.selfRegistered)
+                      ButtonSegment(value: role, label: Text(role.label)),
+                  ],
+                  selected: {_role},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (selection) =>
+                      setState(() => _role = selection.first),
+                ),
+                const SizedBox(height: 18),
+                if (_role == UserRole.restaurant) ...[
+                  TextFormField(
+                    key: const ValueKey('register-business-field'),
+                    controller: _businessController,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    validator: validateBusinessName,
+                    decoration: authInputDecoration(
+                      label: 'Restaurant name',
+                      icon: Icons.storefront_outlined,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                ],
                 TextFormField(
                   key: const ValueKey('register-name-field'),
                   controller: _nameController,
@@ -113,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   textInputAction: TextInputAction.next,
                   validator: validateDisplayName,
                   decoration: authInputDecoration(
-                    label: 'Name',
+                    label: _role == UserRole.restaurant ? 'Your name' : 'Name',
                     icon: Icons.person_outline_rounded,
                   ),
                 ),

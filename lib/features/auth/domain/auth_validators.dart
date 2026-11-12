@@ -64,3 +64,15 @@ String? validateDisplayName(String? value) {
   }
   return null;
 }
+
+/// Name of the business (restaurant accounts).
+String? validateBusinessName(String? value) {
+  final name = value?.trim() ?? '';
+  if (name.isEmpty) {
+    return 'Enter the name of your restaurant.';
+  }
+  if (name.length > maxDisplayNameLength) {
+    return 'Use at most $maxDisplayNameLength characters.';
+  }
+  return null;
+}

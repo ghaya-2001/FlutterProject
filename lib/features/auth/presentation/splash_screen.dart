@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../home/presentation/home_screen.dart';
+import '../../profile/data/user_profile_repository.dart';
+import '../../roles/presentation/role_home.dart';
 import '../../welcome/presentation/welcome_screen.dart';
 import '../data/auth_repository.dart';
 
@@ -13,11 +14,15 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({
     super.key,
     this.repository,
+    this.profiles,
     this.minimumDuration = const Duration(milliseconds: 1500),
   });
 
   /// Defaults to [AuthRepository.instance]; injectable for tests.
   final AuthRepository? repository;
+
+  /// Defaults to [UserProfileRepository.instance]; injectable for tests.
+  final UserProfileRepository? profiles;
 
   /// How long the logo stays at least.
   final Duration minimumDuration;
@@ -48,8 +53,20 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
     _left = true;
-    final next = _auth.isSignedIn
-        ? const FoodSaverHomePage()
+    _open();
+  }
+
+  Future<void> _open() async {
+    final signedIn = _auth.isSignedIn;
+    if (signedIn) {
+      // The role decides the start screen, so wait for the profile.
+      await (widget.profiles ?? UserProfileRepository.instance).whenReady();
+    }
+    if (!mounted) {
+      return;
+    }
+    final next = signedIn
+        ? RoleHome(profiles: widget.profiles)
         : const WelcomeScreen();
     Navigator.of(context)
         .pushReplacement(MaterialPageRoute(builder: (context) => next));

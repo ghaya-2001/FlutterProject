@@ -6,6 +6,7 @@ import '../../../core/firebase/firebase_setup.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../auth/domain/app_user.dart';
 import '../domain/user_profile.dart';
+import '../domain/user_role.dart';
 import '../domain/user_settings.dart';
 import 'user_profile_firestore.dart';
 
@@ -45,6 +46,51 @@ class UserProfileRepository extends ChangeNotifier {
   UserProfile? get profile => _profile;
 
   UserSettings get settings => _profile?.settings ?? const UserSettings();
+
+  /// Role of the signed-in user (a normal user when nobody is signed in).
+  UserRole get role => _profile?.role ?? UserRole.user;
+
+  UserRole? _pendingRole;
+  String _pendingBusinessName = '';
+
+  /// Call right before signing up: the profile created for the new account
+  /// gets this role (it can't be changed afterwards). Admin can't be chosen.
+  void prepareSignUp({required UserRole role, String businessName = ''}) {
+    if (!UserRole.selfRegistered.contains(role)) {
+      throw ArgumentError('Role ${role.name} cannot be chosen at sign-up');
+    }
+    _pendingRole = role;
+    _pendingBusinessName = businessName.trim();
+  }
+
+  /// Call when the sign-up failed, so the choice isn't used by a later account.
+  void cancelSignUp() {
+    _pendingRole = null;
+    _pendingBusinessName = '';
+  }
+
+  /// Completes once the profile of the signed-in user has been loaded (so the
+  /// role is known), or after [timeout] if Firestore doesn't answer.
+  Future<void> whenReady({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    if (!isLoading) {
+      return;
+    }
+    final completer = Completer<void>();
+    void listener() {
+      if (!isLoading && !completer.isCompleted) {
+        completer.complete();
+      }
+    }
+
+    addListener(listener);
+    try {
+      await completer.future.timeout(timeout, onTimeout: () {});
+    } finally {
+      removeListener(listener);
+    }
+  }
 
   Future<void> updateDisplayName(String displayName) async {
     final profile = _requireProfile();
@@ -119,11 +165,16 @@ class UserProfileRepository extends ChangeNotifier {
   }
 
   UserProfile _newProfile(AppUser user) {
+    final role = _pendingRole ?? UserRole.user;
+    final businessName = _pendingBusinessName;
+    cancelSignUp();
     return UserProfile(
       uid: user.uid,
       displayName: user.displayName,
       email: user.email,
       createdAt: _clock(),
+      role: role,
+      businessName: businessName,
     );
   }
 

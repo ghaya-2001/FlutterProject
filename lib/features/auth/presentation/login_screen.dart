@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../home/presentation/home_screen.dart';
+import '../../profile/data/user_profile_repository.dart';
+import '../../roles/presentation/role_home.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_failure.dart';
 import '../domain/auth_validators.dart';
@@ -10,10 +11,13 @@ import 'reset_password_screen.dart';
 import 'widgets/auth_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, this.repository});
+  const LoginScreen({super.key, this.repository, this.profiles});
 
   /// Defaults to [AuthRepository.instance]; injectable for tests.
   final AuthRepository? repository;
+
+  /// Defaults to [UserProfileRepository.instance]; injectable for tests.
+  final UserProfileRepository? profiles;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -48,11 +52,15 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text,
         password: _passwordController.text,
       );
+      // The role decides the start screen, so wait for the profile.
+      await (widget.profiles ?? UserProfileRepository.instance).whenReady();
       if (!mounted) {
         return;
       }
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const FoodSaverHomePage()),
+        MaterialPageRoute(
+          builder: (context) => RoleHome(profiles: widget.profiles),
+        ),
         (route) => false,
       );
     } on AuthFailure catch (failure) {
@@ -201,8 +209,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) =>
-                                RegisterScreen(repository: widget.repository),
+                            builder: (context) => RegisterScreen(
+                              repository: widget.repository,
+                              profiles: widget.profiles,
+                            ),
                           ),
                         );
                       },
