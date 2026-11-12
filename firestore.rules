@@ -6,7 +6,8 @@ rules_version = '2';
 // A client can only create its profile as "user" or "restaurant" and can never
 // change the role afterwards. "admin" is set by hand in the Firebase console.
 //
-// NOT TESTED with the Firebase emulator yet. Do not deploy before:
+// Tested with the Firebase emulator: `cd firestore-tests && npm test` (27 tests).
+// NOT DEPLOYED yet. Do not deploy before:
 //  - every teammate's build uses the signed-in uid (no more "demo-user"), and
 //  - the donation screens follow the new flow (restaurants request, the admin
 //    accepts or refuses): with these rules a donor can no longer accept a
@@ -48,7 +49,11 @@ service cloud.firestore {
     }
 
     // Fridge, history, shopping lists of one user: private to the owner.
-    match /users/{userId}/{document=**} {
+    // Written as {collection}/{document=**} so it only covers subcollections:
+    // a bare /users/{userId}/{document=**} would also match the profile
+    // document itself (the recursive wildcard matches zero segments) and let
+    // users bypass the role check above.
+    match /users/{userId}/{collection}/{document=**} {
       allow read, write: if isOwner(userId);
     }
 
