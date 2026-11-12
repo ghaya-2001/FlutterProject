@@ -17,7 +17,7 @@ After Phase 1 (2026-11-12): analyze clean · **166 passed, 0 failed** (the 3 lis
 ## Membre 1 — Authentication & User Profile (me)
 
 ### Decisions (made 2026-11-01)
-- [x] Sign-in: **email/password only**
+- [x] Sign-in: **email/password only** (2026-11-12: passwordless email-link sign-in considered and skipped: it needs a link domain, Android/iOS link handling and a real-device test)
 - [x] Email verification: send the verification email, but don't block access (default; can be changed later)
 - [x] Profile photo: **compressed image stored in the `users/{uid}` Firestore document** (free Spark plan, kept well under 1 MB)
 - [x] Settings: **notifications on/off**, **change password**, **delete account**
