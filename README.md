@@ -133,7 +133,7 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 - Roles (beyond the original split): a normal **user** donates food and uses the fridge, a **restaurant** requests donations, an **admin** accepts or refuses requests. The role is chosen at sign-up (user or restaurant, never admin), cannot be changed afterwards, and admin is set by hand in the Firebase console.
 - Expiry alerts are never stored: they are recomputed from the fridge expiry dates.
 - If Firebase is not configured (or in tests), the app falls back to in-memory data.
-- Rules: `firestore.rules` is the auth-based version with roles (not tested with the emulator yet, not deployed). The previous open development rules are kept as a comment at the bottom.
+- Rules: `firestore.rules` is the auth-based version with roles (tested with the emulator: `cd firestore-tests && npm test`; not deployed yet). The previous open development rules are kept as a comment at the bottom.
 
 Setup (once per developer):
 

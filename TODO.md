@@ -64,7 +64,7 @@ After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 - [x] Replace the `currentUserId = 'demo-user'` constant with the signed-in uid: `CurrentUser.uid` (`lib/core/session/current_user.dart`), read by `FridgeFirestore`, `ShoppingListFirestore`, `NotificationFirestore` and `DonationRepository` (the `'demo-user'` fallback remains for tests)
 - [x] Re-bind on login / reset on logout: every repository has `connect()` and `clear()`, driven by `SessionBinder` (started in `main.dart`); the app-wide instances use `autoConnect: false`. Tests: `session_binder_test.dart`
 - [x] Auth gate: `_AuthGate` in `app.dart` returns to Welcome if the session ends while the app is open; Splash and logout already route on auth state
-- [~] `firestore.rules` is now the auth-based version **with roles** (old dev rules kept as a comment). **Not tested with the emulator and not deployed**: deploy only after every teammate build uses the real uid and the donor screens follow the new request flow
+- [~] `firestore.rules` is now the auth-based version **with roles** (old dev rules kept as a comment). Tested with the emulator (`firestore-tests/`, 27 tests, run `npm test` there; it found and fixed a self-promotion hole). **Not deployed**: deploy only after every teammate build uses the real uid and the donor screens follow the new request flow
 - [x] Roles (decided 2026-11-13, beyond the original doc): `user` / `restaurant` / `admin` in `users/{uid}.role`; chosen at Register (user or restaurant + business name), immutable, admin only from the Firebase console; `RoleHome` + `RoleShell` give restaurants and admins their own start screen (placeholder donation tab + Profile). Tests: `user_role_test.dart`
 - [ ] Set the first admin by hand: Firebase console → Firestore → `users/{uid}` → add `role` = `admin`
 - [ ] Clear the other modules in-memory data on logout: done through `SessionBinder`; verify on a real device with two accounts
@@ -89,7 +89,7 @@ Roles exist (see Phase 2 above); the donation screens still follow the old flow 
 - [ ] The donor sees the status and gets a notification (rules already allow restaurant/admin to create an event in the donor notifications), then marks the donation collected after the handover (the admin can as a fallback)
 - [ ] Remove the donor-side accept/refuse buttons (the new rules forbid them)
 - [ ] Manual donations without a fridge item ("Donate something else": name, category, quantity, optional expiry; food and pantry items only)
-- [ ] Emulator tests for the donation rules before deploying `firestore.rules`
+- [x] Emulator tests for the donation rules (`firestore-tests/rules.test.js`); rerun after changing the donation flow
 
 ## Membre 2 — Fridge management
 Reported done in the README (`lib/features/fridge/`), with Firestore sync and anti-waste stats on top.
