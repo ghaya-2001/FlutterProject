@@ -31,6 +31,10 @@ class FakeUserProfileFirestore implements UserProfileFirestore {
       calls.add('name $uid $displayName');
 
   @override
+  Future<void> saveBusinessName(String uid, String businessName) async =>
+      calls.add('business $uid $businessName');
+
+  @override
   Future<void> savePhoto(String uid, String? photoBase64) async =>
       calls.add('photo $uid ${photoBase64 ?? 'removed'}');
 

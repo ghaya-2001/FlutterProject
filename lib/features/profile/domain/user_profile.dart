@@ -52,6 +52,7 @@ class UserProfile {
   UserProfile copyWith({
     String? displayName,
     String? email,
+    String? businessName,
     String? photoBase64,
     bool removePhoto = false,
     UserSettings? settings,
@@ -64,7 +65,7 @@ class UserProfile {
       photoBase64: removePhoto ? null : photoBase64 ?? this.photoBase64,
       settings: settings ?? this.settings,
       role: role,
-      businessName: businessName,
+      businessName: businessName ?? this.businessName,
     );
   }
 }
