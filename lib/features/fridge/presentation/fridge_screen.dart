@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../home/presentation/home_screen.dart';
+import '../../list/data/shopping_list_repository.dart';
 import '../../list/presentation/list_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../data/fridge_repository.dart';
@@ -10,13 +11,18 @@ import '../domain/fridge_formatters.dart';
 import 'add_food_screen.dart';
 import 'food_details_screen.dart';
 import 'fridge_stats_screen.dart';
+import 'import_groceries_screen.dart';
+import 'recipes_screen.dart';
 import 'widgets/name_input_dialog.dart';
 
 class FridgeScreen extends StatefulWidget {
-  const FridgeScreen({super.key, this.repository});
+  const FridgeScreen({super.key, this.repository, this.shoppingRepository});
 
   /// Defaults to [FridgeRepository.instance]; injectable for tests.
   final FridgeRepository? repository;
+
+  /// Defaults to [ShoppingListRepository.instance] (bought groceries).
+  final ShoppingListRepository? shoppingRepository;
 
   @override
   State<FridgeScreen> createState() => _FridgeScreenState();
@@ -31,6 +37,9 @@ class _FridgeScreenState extends State<FridgeScreen> {
 
   FridgeRepository get _repository =>
       widget.repository ?? FridgeRepository.instance;
+
+  ShoppingListRepository get _shopping =>
+      widget.shoppingRepository ?? ShoppingListRepository.instance;
 
   @override
   void dispose() {
@@ -58,6 +67,31 @@ class _FridgeScreenState extends State<FridgeScreen> {
       MaterialPageRoute(
         builder: (context) =>
             FoodDetailsScreen(repository: _repository, foodId: item.id),
+      ),
+    );
+    if (message != null && mounted) {
+      _showSnackBar(message);
+    }
+  }
+
+  void _openRecipes() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => RecipesScreen(
+          repository: _repository,
+          shoppingRepository: _shopping,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openImport() async {
+    final message = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => ImportGroceriesScreen(
+          repository: _repository,
+          shoppingRepository: _shopping,
+        ),
       ),
     );
     if (message != null && mounted) {
@@ -175,7 +209,7 @@ class _FridgeScreenState extends State<FridgeScreen> {
               const SizedBox(height: 14),
               Expanded(
                 child: ListenableBuilder(
-                  listenable: _repository,
+                  listenable: Listenable.merge([_repository, _shopping]),
                   builder: (context, _) => _buildContent(),
                 ),
               ),
@@ -253,6 +287,8 @@ class _FridgeScreenState extends State<FridgeScreen> {
       padding: const EdgeInsets.only(bottom: 90),
       children: [
         _SummaryCard(repository: _repository),
+        const SizedBox(height: 12),
+        _buildQuickActions(),
         const SizedBox(height: 18),
         _buildSearchField(),
         if (presentCategories.isNotEmpty) ...[
@@ -317,6 +353,48 @@ class _FridgeScreenState extends State<FridgeScreen> {
             ],
           ],
         ],
+      ],
+    );
+  }
+
+  Widget _buildQuickActions() {
+    final recipes = _repository.recipeSuggestions;
+    final saving = recipes.where((match) => match.urgentCount > 0).length;
+    final groceries = ImportGroceriesScreen.pendingCount(
+      _repository,
+      _shopping,
+    );
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickAction(
+            key: const ValueKey('cook-now-action'),
+            icon: Icons.soup_kitchen_rounded,
+            title: 'Cook now',
+            subtitle: saving > 0
+                ? '$saving ${saving == 1 ? 'recipe saves' : 'recipes save'}'
+                      ' expiring food'
+                : '${recipes.length} recipe idea(s)',
+            color: const Color(0xFFE65100),
+            background: const Color(0xFFFFF3E0),
+            onTap: _openRecipes,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _QuickAction(
+            key: const ValueKey('import-groceries-action'),
+            icon: Icons.shopping_basket_rounded,
+            title: 'Groceries',
+            subtitle: groceries == 0
+                ? 'Nothing bought to add'
+                : '$groceries bought to add',
+            color: const Color(0xFF00838F),
+            background: const Color(0xFFE0F7FA),
+            badge: groceries,
+            onTap: _openImport,
+          ),
+        ),
       ],
     );
   }
@@ -557,6 +635,96 @@ class _SummaryCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.background,
+    required this.onTap,
+    this.badge = 0,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final Color background;
+  final VoidCallback onTap;
+  final int badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: background,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, size: 20, color: color),
+                  ),
+                  const Spacer(),
+                  if (badge > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$badge',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1B1B1B),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

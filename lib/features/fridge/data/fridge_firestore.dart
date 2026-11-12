@@ -5,15 +5,33 @@ import '../domain/food_category.dart';
 import '../domain/food_item.dart';
 import '../domain/fridge_event.dart';
 
+/// What is stored on the user document for the fridge module.
+class FridgeSettings {
+  const FridgeSettings({
+    required this.customCategories,
+    required this.isSeeded,
+    this.importedShoppingItemIds = const [],
+  });
+
+  final List<String> customCategories;
+
+  /// True once the demo foods were written for this user.
+  final bool isSeeded;
+
+  /// Bought shopping items already moved to the fridge.
+  final List<String> importedShoppingItemIds;
+}
+
 /// Reads and writes the fridge in Firestore.
 ///
 /// Structure:
 /// ```
-/// users/{userId}                       customFoodCategories
+/// users/{userId}                       customFoodCategories, fridgeSeeded,
+///                                      importedShoppingItemIds
 /// users/{userId}/fridge_items/{id}     name, category, quantity, unit,
 ///                                      expiryDate, addedAt, note
 /// users/{userId}/fridge_history/{id}   type, foodName, category, quantity,
-///                                      unit, at
+///                                      unit, at, daysLeft, recipe
 /// ```
 /// One document per food: foods are edited one by one, and the fridge is
 /// listened to in real time so every phone of the user stays up to date.
@@ -36,10 +54,46 @@ class FridgeFirestore {
   CollectionReference<Map<String, dynamic>> get _history =>
       _user.collection('fridge_history');
 
-  Future<List<String>> loadCustomCategories() async {
+  Future<FridgeSettings> loadSettings() async {
     final user = await _user.get();
     final data = user.data() ?? const <String, dynamic>{};
-    return List<String>.from(data['customFoodCategories'] as List? ?? const []);
+    return FridgeSettings(
+      customCategories: List<String>.from(
+        data['customFoodCategories'] as List? ?? const [],
+      ),
+      isSeeded: data['fridgeSeeded'] as bool? ?? false,
+      importedShoppingItemIds: List<String>.from(
+        data['importedShoppingItemIds'] as List? ?? const [],
+      ),
+    );
+  }
+
+  /// Adds groceries bought from the shopping list and remembers which
+  /// shopping items they came from, in one batch: a grocery can never be
+  /// imported twice, even from another phone.
+  Future<void> importGroceries(
+    List<FoodItem> items,
+    List<String> shoppingItemIds,
+  ) {
+    final batch = _db.batch();
+    for (final item in items) {
+      batch.set(_items.doc(item.id), foodItemToMap(item));
+    }
+    batch.set(_user, {
+      'importedShoppingItemIds': FieldValue.arrayUnion(shoppingItemIds),
+    }, SetOptions(merge: true));
+    return batch.commit();
+  }
+
+  /// Writes the demo foods of a new user and remembers it in the same batch,
+  /// so they are added only once (not again after the fridge is emptied).
+  Future<void> saveDemoFoods(List<FoodItem> items) {
+    final batch = _db.batch();
+    for (final item in items) {
+      batch.set(_items.doc(item.id), foodItemToMap(item));
+    }
+    batch.set(_user, {'fridgeSeeded': true}, SetOptions(merge: true));
+    return batch.commit();
   }
 
   /// Every food of the fridge, sent again each time one of them changes
@@ -127,6 +181,8 @@ Map<String, dynamic> fridgeEventToMap(FridgeEvent event) {
     'quantity': event.quantity,
     'unit': event.unit,
     'at': Timestamp.fromDate(event.at),
+    'daysLeft': event.daysLeft,
+    'recipe': event.recipe,
   };
 }
 
@@ -144,6 +200,8 @@ FridgeEvent fridgeEventFromMap(
     quantity: (map['quantity'] as num? ?? 0).toDouble(),
     unit: map['unit'] as String? ?? 'pcs',
     at: _date(map['at']) ?? DateTime.now(),
+    daysLeft: (map['daysLeft'] as num?)?.toInt(),
+    recipe: map['recipe'] as String?,
   );
 }
 

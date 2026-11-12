@@ -3,13 +3,36 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/firebase/firebase_setup.dart';
+import '../domain/achievements.dart';
 import '../domain/food_category.dart';
 import '../domain/food_item.dart';
 import '../domain/fridge_event.dart';
 import '../domain/fridge_stats.dart';
+import '../domain/recipes.dart';
 import 'fridge_firestore.dart';
 
 enum FridgeSort { expiryDate, name, recentlyAdded }
+
+/// A bought shopping item about to be moved to the fridge.
+class GroceryImport {
+  const GroceryImport({
+    required this.shoppingItemId,
+    required this.name,
+    required this.category,
+    required this.quantity,
+    required this.unit,
+    required this.expiryDate,
+    this.note = '',
+  });
+
+  final String shoppingItemId;
+  final String name;
+  final FoodCategory category;
+  final double quantity;
+  final String unit;
+  final DateTime expiryDate;
+  final String note;
+}
 
 /// Store for the fridge module.
 ///
@@ -23,7 +46,7 @@ class FridgeRepository extends ChangeNotifier {
   FridgeRepository({bool seed = true, DateTime Function()? clock, this.remote})
     : _clock = clock ?? DateTime.now {
     if (remote != null) {
-      _connectRemote();
+      _connectRemote(seedNewUser: seed);
     } else if (seed) {
       _seed();
     }
@@ -43,6 +66,7 @@ class FridgeRepository extends ChangeNotifier {
   final List<FoodItem> _items = [];
   final List<FoodCategory> _categories = [...defaultFoodCategories];
   final List<FridgeEvent> _history = [];
+  final Set<String> _importedShoppingItemIds = {};
   StreamSubscription<List<Map<String, dynamic>>>? _itemsSubscription;
   int _idCounter = 0;
 
@@ -59,6 +83,11 @@ class FridgeRepository extends ChangeNotifier {
   List<FridgeEvent> get history => List.unmodifiable(_history);
 
   FridgeStats get stats => FridgeStats(_history, now);
+
+  List<Achievement> get achievements => achievementsFor(_history, now);
+
+  /// Recipes using the fridge foods, the ones saving expiring foods first.
+  List<RecipeMatch> get recipeSuggestions => suggestRecipes(_items, now);
 
   /// Number of ingredients still usable (not expired).
   int get availableCount => _items.where((item) => !item.isExpired(now)).length;
@@ -205,7 +234,38 @@ class FridgeRepository extends ChangeNotifier {
   ///
   /// [record] adds the meal to the history; it is false when the food leaves
   /// the fridge for another reason (a donation).
-  double consume(String id, double amount, {bool record = true}) {
+  double consume(String id, double amount, {bool record = true}) =>
+      _consume(id, amount, record: record, at: now);
+
+  /// Uses [amounts] (food id → quantity) of the fridge to cook [recipe].
+  ///
+  /// Every ingredient is recorded as eaten at the same moment, with the
+  /// recipe name, so the statistics count one cooking session.
+  void cookRecipe(Recipe recipe, Map<String, double> amounts) {
+    if (amounts.isEmpty) {
+      throw ArgumentError('Choose at least one ingredient');
+    }
+    for (final entry in amounts.entries) {
+      if (itemById(entry.key) == null) {
+        throw ArgumentError('Food ${entry.key} not found');
+      }
+      if (entry.value <= 0) {
+        throw ArgumentError('Amount must be greater than 0');
+      }
+    }
+    final cookedAt = now;
+    for (final entry in amounts.entries) {
+      _consume(entry.key, entry.value, recipe: recipe.name, at: cookedAt);
+    }
+  }
+
+  double _consume(
+    String id,
+    double amount, {
+    bool record = true,
+    String? recipe,
+    required DateTime at,
+  }) {
     if (amount <= 0) {
       throw ArgumentError('Amount must be greater than 0');
     }
@@ -218,7 +278,7 @@ class FridgeRepository extends ChangeNotifier {
     final remaining = ((item.quantity - amount) * 1000).roundToDouble() / 1000;
     if (record) {
       final eaten = amount > item.quantity ? item.quantity : amount;
-      _record(FridgeEventType.consumed, item, eaten);
+      _record(FridgeEventType.consumed, item, eaten, recipe: recipe, at: at);
     }
     if (remaining <= 0) {
       _items.removeAt(index);
@@ -230,6 +290,48 @@ class FridgeRepository extends ChangeNotifier {
     notifyListeners();
     _saveItem(_items[index]);
     return remaining;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Groceries from the shopping list
+  // ---------------------------------------------------------------------------
+
+  /// True when the bought shopping item was already moved to the fridge.
+  bool isImported(String shoppingItemId) =>
+      _importedShoppingItemIds.contains(shoppingItemId);
+
+  /// Adds bought groceries to the fridge, each one only once.
+  List<FoodItem> importGroceries(List<GroceryImport> groceries) {
+    final added = <FoodItem>[];
+    final importedIds = <String>[];
+    for (final grocery in groceries) {
+      if (isImported(grocery.shoppingItemId)) {
+        continue;
+      }
+      final name = grocery.name.trim();
+      _validate(name, grocery.quantity);
+      added.add(
+        FoodItem(
+          id: _newId(),
+          name: name,
+          category: grocery.category,
+          quantity: grocery.quantity,
+          unit: grocery.unit,
+          expiryDate: DateUtils.dateOnly(grocery.expiryDate),
+          addedAt: now,
+          note: grocery.note.trim(),
+        ),
+      );
+      importedIds.add(grocery.shoppingItemId);
+    }
+    if (added.isEmpty) {
+      return added;
+    }
+    _items.addAll(added);
+    _importedShoppingItemIds.addAll(importedIds);
+    notifyListeners();
+    _sync(() => remote!.importGroceries(added, importedIds));
+    return added;
   }
 
   // ---------------------------------------------------------------------------
@@ -326,7 +428,14 @@ class FridgeRepository extends ChangeNotifier {
     return categoryNamed(trimmed) ?? _insertCustomCategory(trimmed);
   }
 
-  void _record(FridgeEventType type, FoodItem item, double quantity) {
+  void _record(
+    FridgeEventType type,
+    FoodItem item,
+    double quantity, {
+    String? recipe,
+    DateTime? at,
+  }) {
+    final when = at ?? now;
     final event = FridgeEvent(
       id: _newId('event'),
       type: type,
@@ -334,7 +443,9 @@ class FridgeRepository extends ChangeNotifier {
       category: item.category,
       quantity: quantity,
       unit: item.unit,
-      at: now,
+      at: when,
+      daysLeft: item.daysLeft(when),
+      recipe: recipe,
     );
     _history.insert(0, event);
     _sync(() => remote!.addEvent(event));
@@ -344,12 +455,21 @@ class FridgeRepository extends ChangeNotifier {
   // Firestore
   // ---------------------------------------------------------------------------
 
-  Future<void> _connectRemote() async {
+  /// [seedNewUser] fills the fridge of a user who never used it with the
+  /// demo foods, so expiry alerts, donations and the chatbot have data.
+  Future<void> _connectRemote({required bool seedNewUser}) async {
     isLoading = true;
     notifyListeners();
     try {
-      for (final name in await remote!.loadCustomCategories()) {
+      final settings = await remote!.loadSettings();
+      for (final name in settings.customCategories) {
         _categoryFor(name);
+      }
+      _importedShoppingItemIds.addAll(settings.importedShoppingItemIds);
+      if (seedNewUser && !settings.isSeeded) {
+        _seed();
+        final demoFoods = List<FoodItem>.of(_items);
+        _sync(() => remote!.saveDemoFoods(demoFoods));
       }
       final events = await remote!.loadHistory();
       // Keep events recorded on this phone while the history was loading.

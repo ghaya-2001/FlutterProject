@@ -22,9 +22,9 @@ Code: `lib/features/fridge/`
 
 | Folder | Content |
 | --- | --- |
-| `domain/` | `FoodItem`, `FoodCategory`, expiry status and formatting helpers |
+| `domain/` | `FoodItem`, `FoodCategory`, expiry status and formatting helpers, `FridgeStats`, recipe book and matching, shelf life, achievements |
 | `data/` | `FridgeRepository` (ChangeNotifier), `FridgeFirestore` (Cloud Firestore) |
-| `presentation/` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
+| `presentation/` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen`, `RecipesScreen`, `ImportGroceriesScreen` |
 
 | Feature (cahier des charges) | Where |
 | --- | --- |
@@ -46,6 +46,9 @@ Code: `lib/features/fridge/`
 | Historique de consommation | Every consumption and every thrown away food is saved in `fridge_history` |
 | Statistiques anti-gaspillage | Fridge chart icon → anti-waste score, eaten / wasted, days without waste, last 7 days chart, most wasted categories, recent activity |
 | Aliments jetés | Expired food → Food Details → Throw away (counted as waste; Delete stays for corrections) |
+| Recettes anti-gaspillage ("Cook now") | Fridge → Cook now: built-in recipe book matched against the fridge, recipes using the foods that expire soonest first; adjustable quantities; "I cooked it" removes them from the stock and counts them as eaten; "Add missing to shopping list" (Membre 4 lists) |
+| Courses → frigo | Fridge → Groceries: items checked as bought in the shopping lists go to the fridge in one tap, expiry date suggested from the shelf life of the category (editable), each item imported only once |
+| Badges / succès | Anti-waste stats → Achievements: First bite, Food saver, Last-minute rescue, Anti-waste chef, Balanced diet, Zero-waste week, Anti-waste champion, with progress bars |
 
 Tests: `test/features/fridge/` (including `fridge_firestore_test.dart` with a fake Firestore and `fridge_stats_test.dart`)
 
@@ -119,9 +122,9 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 
 | Collection | Content | Code |
 | --- | --- | --- |
-| `users/{userId}` | `customFoodCategories`, `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
+| `users/{userId}` | `customFoodCategories`, `fridgeSeeded`, `importedShoppingItemIds`, `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
 | `users/{userId}/fridge_items/{id}` | `name`, `category`, `quantity`, `unit`, `expiryDate`, `addedAt`, `note` (listened to in real time) | `lib/features/fridge/data/fridge_firestore.dart` |
-| `users/{userId}/fridge_history/{id}` | `type` (consumed / wasted), `foodName`, `category`, `quantity`, `unit`, `at` | `lib/features/fridge/data/fridge_firestore.dart` |
+| `users/{userId}/fridge_history/{id}` | `type` (consumed / wasted), `foodName`, `category`, `quantity`, `unit`, `at`, `daysLeft`, `recipe` | `lib/features/fridge/data/fridge_firestore.dart` |
 | `users/{userId}/shopping_lists/{listId}` | `name`, `createdAt`, `items: [...]` | `lib/features/list/data/shopping_list_firestore.dart` |
 | `users/{userId}/notifications/{id}` | donation events: `type`, `title`, `body`, `donationId`, `createdAt` | `lib/features/notifications/data/notification_firestore.dart` |
 | `donations/{donationId}` | `donorId`, `foodName`, `category`, `quantity`, `unit`, `expiryDate`, `status`, `requests: [...]` | `lib/features/donations/data/donation_firestore.dart` |
