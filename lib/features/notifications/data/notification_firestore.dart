@@ -1,6 +1,7 @@
+// ignore_for_file: prefer_initializing_formals (private field, named parameter)
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../../core/firebase/firebase_setup.dart';
+import '../../../core/session/current_user.dart';
 import '../domain/app_notification.dart';
 
 /// Reads and writes the user's notifications in Firestore.
@@ -13,13 +14,15 @@ import '../domain/app_notification.dart';
 /// Expiry alerts are not stored: they are always recomputed from the fridge.
 /// Only donation events and the "read" state are saved.
 class NotificationFirestore {
-  NotificationFirestore({
-    FirebaseFirestore? firestore,
-    this.userId = currentUserId,
-  }) : _db = firestore ?? FirebaseFirestore.instance;
+  NotificationFirestore({FirebaseFirestore? firestore, String? userId})
+    : _db = firestore ?? FirebaseFirestore.instance,
+      _userId = userId;
 
   final FirebaseFirestore _db;
-  final String userId;
+  final String? _userId;
+
+  /// The signed-in user, unless a fixed id was given (tests).
+  String get userId => _userId ?? CurrentUser.uid;
 
   DocumentReference<Map<String, dynamic>> get _user =>
       _db.collection('users').doc(userId);

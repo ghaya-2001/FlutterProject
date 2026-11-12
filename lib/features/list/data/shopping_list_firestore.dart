@@ -1,6 +1,7 @@
+// ignore_for_file: prefer_initializing_formals (private field, named parameter)
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../../core/firebase/firebase_setup.dart';
+import '../../../core/session/current_user.dart';
 import '../domain/shopping_category.dart';
 import '../domain/shopping_item.dart';
 import '../domain/shopping_list.dart';
@@ -28,13 +29,15 @@ class ShoppingData {
 /// Items are stored inside their list document: a list is small and is
 /// always read and written as a whole.
 class ShoppingListFirestore {
-  ShoppingListFirestore({
-    FirebaseFirestore? firestore,
-    this.userId = currentUserId,
-  }) : _db = firestore ?? FirebaseFirestore.instance;
+  ShoppingListFirestore({FirebaseFirestore? firestore, String? userId})
+    : _db = firestore ?? FirebaseFirestore.instance,
+      _userId = userId;
 
   final FirebaseFirestore _db;
-  final String userId;
+  final String? _userId;
+
+  /// The signed-in user, unless a fixed id was given (tests).
+  String get userId => _userId ?? CurrentUser.uid;
 
   DocumentReference<Map<String, dynamic>> get _user =>
       _db.collection('users').doc(userId);

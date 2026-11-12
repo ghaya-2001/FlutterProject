@@ -35,6 +35,8 @@ class NotificationService {
 
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
+  bool _enabled = true;
+  FridgeRepository? _fridge;
   Future<void> _queue = Future.value();
   int _nextShowId = 100000;
 
@@ -66,13 +68,39 @@ class NotificationService {
       return;
     }
 
+    _fridge = fridge;
     fridge.addListener(() => _scheduleQueued(fridge));
     _scheduleQueued(fridge);
   }
 
+  /// Turns all phone notifications on or off (Settings, Membre 1). Turning
+  /// them back on schedules the alerts again from the current fridge.
+  void setEnabled(bool enabled) {
+    if (_enabled == enabled) {
+      return;
+    }
+    _enabled = enabled;
+    final fridge = _fridge;
+    if (fridge != null) {
+      _scheduleQueued(fridge);
+    }
+  }
+
+  /// Cancels every scheduled alert (logout, account deletion).
+  Future<void> cancelAll() async {
+    if (!_ready) {
+      return;
+    }
+    try {
+      await _plugin.cancelAllPendingNotifications();
+    } catch (error) {
+      debugPrint('Could not cancel alerts: $error');
+    }
+  }
+
   /// Shows a notification right away (used for donation requests).
   void showNow(String title, String body) {
-    if (!_ready) {
+    if (!_ready || !_enabled) {
       return;
     }
     _plugin.show(
@@ -99,6 +127,9 @@ class NotificationService {
     // Simplest reliable approach: clear everything and schedule again from
     // the current fridge content.
     await _plugin.cancelAllPendingNotifications();
+    if (!_enabled) {
+      return;
+    }
     var id = 0;
     for (final item in fridge.items) {
       for (final moment in alertMomentsFor(item, fridge.now)) {

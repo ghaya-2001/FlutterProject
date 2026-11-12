@@ -20,16 +20,18 @@ class NotificationRepository extends ChangeNotifier {
     FridgeRepository? fridge,
     this.pushHandler,
     this.remote,
+    bool autoConnect = true,
   }) : _fridge = fridge ?? FridgeRepository.instance {
     // Expiry alerts change whenever the fridge changes.
     _fridge.addListener(notifyListeners);
-    if (remote != null) {
+    if (remote != null && autoConnect) {
       _loadRemote();
     }
   }
 
   static final NotificationRepository instance = NotificationRepository(
     remote: FirebaseSetup.isReady ? NotificationFirestore() : null,
+    autoConnect: false,
   );
 
   final FridgeRepository _fridge;
@@ -104,6 +106,20 @@ class NotificationRepository extends ChangeNotifier {
     pushHandler?.call(title, body);
     notifyListeners();
     _sync(() => remote!.saveEvent(event));
+  }
+
+  /// Loads the signed-in user's donation events (after [clear]).
+  void connect() {
+    if (remote != null) {
+      _loadRemote();
+    }
+  }
+
+  /// Forgets the previous user's events and read state.
+  void clear() {
+    _events.clear();
+    _readIds.clear();
+    notifyListeners();
   }
 
   Future<void> _loadRemote() async {

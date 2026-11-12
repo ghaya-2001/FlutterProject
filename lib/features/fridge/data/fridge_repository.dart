@@ -43,10 +43,19 @@ class GroceryImport {
 /// fridge is listened to in real time in Firestore and every change is saved
 /// there too, so the user's other phones see it immediately.
 class FridgeRepository extends ChangeNotifier {
-  FridgeRepository({bool seed = true, DateTime Function()? clock, this.remote})
-    : _clock = clock ?? DateTime.now {
+  /// [autoConnect] false waits for [connect] (the app-wide instance, bound
+  /// to the signed-in user by `SessionBinder`).
+  FridgeRepository({
+    bool seed = true,
+    DateTime Function()? clock,
+    this.remote,
+    bool autoConnect = true,
+  }) : _clock = clock ?? DateTime.now,
+       _seed_ = seed {
     if (remote != null) {
-      _connectRemote(seedNewUser: seed);
+      if (autoConnect) {
+        _connectRemote(seedNewUser: seed);
+      }
     } else if (seed) {
       _seed();
     }
@@ -54,7 +63,10 @@ class FridgeRepository extends ChangeNotifier {
 
   static final FridgeRepository instance = FridgeRepository(
     remote: FirebaseSetup.isReady ? FridgeFirestore() : null,
+    autoConnect: false,
   );
+
+  final bool _seed_;
 
   /// Firestore storage; null in tests or when Firebase is not configured.
   final FridgeFirestore? remote;
@@ -494,6 +506,31 @@ class FridgeRepository extends ChangeNotifier {
         notifyListeners();
       },
     );
+  }
+
+  /// Loads the signed-in user's fridge (after [clear]).
+  void connect() {
+    if (remote != null) {
+      _connectRemote(seedNewUser: _seed_);
+    } else if (_seed_) {
+      _seed();
+      notifyListeners();
+    }
+  }
+
+  /// Forgets the previous user's fridge (on logout or when another account
+  /// signs in).
+  void clear() {
+    _itemsSubscription?.cancel();
+    _itemsSubscription = null;
+    _items.clear();
+    _history.clear();
+    _importedShoppingItemIds.clear();
+    _categories
+      ..clear()
+      ..addAll(defaultFoodCategories);
+    isLoading = false;
+    notifyListeners();
   }
 
   void _applyRemoteItems(List<Map<String, dynamic>> maps) {

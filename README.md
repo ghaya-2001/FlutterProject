@@ -122,17 +122,18 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 
 | Collection | Content | Code |
 | --- | --- | --- |
-| `users/{userId}` | `customFoodCategories`, `fridgeSeeded`, `importedShoppingItemIds`, `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
+| `users/{userId}` | `displayName`, `email`, `photo` (base64 JPEG), `createdAt`, `settings`, `role` (`user` / `restaurant` / `admin`), `businessName` (restaurants), `customFoodCategories`, `fridgeSeeded`, `importedShoppingItemIds`, `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
 | `users/{userId}/fridge_items/{id}` | `name`, `category`, `quantity`, `unit`, `expiryDate`, `addedAt`, `note` (listened to in real time) | `lib/features/fridge/data/fridge_firestore.dart` |
 | `users/{userId}/fridge_history/{id}` | `type` (consumed / wasted), `foodName`, `category`, `quantity`, `unit`, `at`, `daysLeft`, `recipe` | `lib/features/fridge/data/fridge_firestore.dart` |
 | `users/{userId}/shopping_lists/{listId}` | `name`, `createdAt`, `items: [...]` | `lib/features/list/data/shopping_list_firestore.dart` |
 | `users/{userId}/notifications/{id}` | donation events: `type`, `title`, `body`, `donationId`, `createdAt` | `lib/features/notifications/data/notification_firestore.dart` |
 | `donations/{donationId}` | `donorId`, `foodName`, `category`, `quantity`, `unit`, `expiryDate`, `status`, `requests: [...]` | `lib/features/donations/data/donation_firestore.dart` |
 
-- No authentication yet: every phone uses `userId = demo-user` (`lib/core/firebase/firebase_setup.dart`). Replace it with the Firebase Auth uid when login is ready.
+- Every module reads and writes under the signed-in uid (`CurrentUser.uid`, `lib/core/session/current_user.dart`). `SessionBinder` empties and reloads the repositories when the account changes. Without Firebase (tests) the fixed `demo-user` is used.
+- Roles (beyond the original split): a normal **user** donates food and uses the fridge, a **restaurant** requests donations, an **admin** accepts or refuses requests. The role is chosen at sign-up (user or restaurant, never admin), cannot be changed afterwards, and admin is set by hand in the Firebase console.
 - Expiry alerts are never stored: they are recomputed from the fridge expiry dates.
 - If Firebase is not configured (or in tests), the app falls back to in-memory data.
-- Rules: `firestore.rules` (open until 31 Jan 2027, auth-based version included as a comment).
+- Rules: `firestore.rules` is the auth-based version with roles (not tested with the emulator yet, not deployed). The previous open development rules are kept as a comment at the bottom.
 
 Setup (once per developer):
 

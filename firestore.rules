@@ -1,40 +1,104 @@
 rules_version = '2';
 
-// Food Saver – Firestore rules (Membre 2 fridge, Membre 3 donations,
-// Membre 4 lists & notifications)
+// Food Saver – Firestore rules (auth-based, with roles).
 //
-// DEVELOPMENT RULES: there is no Firebase Authentication yet, so everyone can
-// read and write these collections until the date below. Replace them with
-// the "after auth" rules once login (Membre 1) is connected.
+// Roles live in users/{uid}.role: "user" (default), "restaurant" or "admin".
+// A client can only create its profile as "user" or "restaurant" and can never
+// change the role afterwards. "admin" is set by hand in the Firebase console.
+//
+// NOT TESTED with the Firebase emulator yet. Do not deploy before:
+//  - every teammate's build uses the signed-in uid (no more "demo-user"), and
+//  - the donation screens follow the new flow (restaurants request, the admin
+//    accepts or refuses): with these rules a donor can no longer accept a
+//    request on their own donation.
+//
+// The previous development rules (open until 31 Jan 2027, no auth) are kept at
+// the bottom of this file as a comment, in case a rollback is needed.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Fridge, shopping lists, custom categories and notifications of one user.
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.time < timestamp.date(2027, 1, 31);
+    function signedIn() {
+      return request.auth != null;
     }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    // Role of the caller, read from their own profile ("user" if missing).
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid))
+        .data.get('role', 'user');
+    }
+
+    function isAdmin() {
+      return signedIn() && role() == 'admin';
+    }
+
+    // Profile of one user (name, photo, settings, role, plus fields stored by
+    // the other modules).
     match /users/{userId} {
-      allow read, write: if request.time < timestamp.date(2027, 1, 31);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.get('role', 'user') in ['user', 'restaurant'];
+      allow update: if isOwner(userId)
+        && request.resource.data.get('role', 'user')
+           == resource.data.get('role', 'user');
+      allow delete: if isOwner(userId);
     }
 
-    // Donations are shared: beneficiaries must see every available donation.
+    // Fridge, history, shopping lists of one user: private to the owner.
+    match /users/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Donation events: written by the user's own phone, or (when a restaurant
+    // requests a donation) by a restaurant or the admin for the donor.
+    match /users/{userId}/notifications/{eventId} {
+      allow create: if signedIn() && role() in ['restaurant', 'admin'];
+    }
+
+    // Donations are shared between donors, restaurants and the admin.
     match /donations/{donationId} {
-      allow read, write: if request.time < timestamp.date(2027, 1, 31);
-    }
+      allow read: if signedIn();
 
-    // ---------------------------------------------------------------------
-    // AFTER AUTH (replace the rules above):
-    //
-    // match /users/{userId}/{document=**} {
-    //   allow read, write: if request.auth != null && request.auth.uid == userId;
-    // }
-    // match /donations/{donationId} {
-    //   allow read: if request.auth != null;
-    //   allow create: if request.auth != null
-    //     && request.resource.data.donorId == request.auth.uid;
-    //   allow update: if request.auth != null;
-    //   allow delete: if request.auth != null
-    //     && resource.data.donorId == request.auth.uid;
-    // }
+      // Only normal users donate, and only in their own name.
+      allow create: if signedIn() && role() == 'user'
+        && request.resource.data.donorId == request.auth.uid;
+
+      allow update: if signedIn() && (
+        // The admin decides on requests (accept, refuse, mark collected).
+        isAdmin()
+        // The donor can only change the status (e.g. collected).
+        || (resource.data.donorId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'collectedAt']))
+        // A restaurant can only add one request.
+        || (role() == 'restaurant'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['requests'])
+            && request.resource.data.requests.size()
+               == resource.data.requests.size() + 1)
+      );
+
+      allow delete: if signedIn() && resource.data.donorId == request.auth.uid;
+    }
   }
 }
+
+// -----------------------------------------------------------------------------
+// PREVIOUS DEVELOPMENT RULES (no auth, open until 31 Jan 2027):
+//
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /users/{userId}/{document=**} {
+//       allow read, write: if request.time < timestamp.date(2027, 1, 31);
+//     }
+//     match /users/{userId} {
+//       allow read, write: if request.time < timestamp.date(2027, 1, 31);
+//     }
+//     match /donations/{donationId} {
+//       allow read, write: if request.time < timestamp.date(2027, 1, 31);
+//     }
+//   }
+// }
