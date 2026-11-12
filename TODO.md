@@ -24,7 +24,7 @@ After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 - [x] Settings: **notifications on/off**, **change password**, **delete account**
 
 ### Phase 0 — Setup ✅ (2026-11-01, branch `feature/m1-auth-profile`)
-- [ ] **(You, in the console)** Enable **Email/Password** sign-in in Firebase console (Authentication → Sign-in method). Can't be checked from the code: verify on the first real sign-up (`operation-not-allowed` means it is still off)
+- [x] **(You, in the console)** Enabled **Email/Password** sign-in in the Firebase console (confirmed 2026-11-13). The first real sign-up on a device is still the end-to-end check (`operation-not-allowed` would mean it is off)
 - [x] Add `firebase_auth` and `image_picker`; iOS photo/camera usage descriptions added to `Info.plist`
 - [x] `auth/data/auth_firebase.dart`: `AuthFirebase` wraps `FirebaseAuth` and throws `AuthFailure` instead of Firebase exceptions
 - [x] `auth/data/auth_repository.dart`: `AuthRepository` (`ChangeNotifier` singleton, in-memory accounts when there is no Firebase) with `currentUser`, `isLoading`, `signUp`, `signIn`, `sendPasswordReset`, `sendEmailVerification`, `reloadUser`, `updateDisplayName`, `reauthenticate`, `changePassword`, `deleteAccount`, `signOut`
