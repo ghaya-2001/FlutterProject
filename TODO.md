@@ -10,6 +10,7 @@ Legend: `[x]` done · `[~]` partly done / UI only · `[ ]` not started
 
 Baseline (2026-11-01, `main` @ `2d1bd88`): `flutter analyze` clean · `flutter test` 94 passed, **3 failed** (`test/features/list/list_screen_test.dart`).
 After Phase 0 (`feature/m1-auth-profile`): analyze clean · 129 passed, the same 3 failed.
+After Phase 1 (2026-11-12): analyze clean · **166 passed, 0 failed** (the 3 list tests were fixed on `main` by Membre 2).
 
 ---
 
@@ -22,7 +23,7 @@ After Phase 0 (`feature/m1-auth-profile`): analyze clean · 129 passed, the same
 - [x] Settings: **notifications on/off**, **change password**, **delete account**
 
 ### Phase 0 — Setup ✅ (2026-11-01, branch `feature/m1-auth-profile`)
-- [ ] **(You, in the console)** Enable **Email/Password** sign-in in Firebase console (Authentication → Sign-in method)
+- [ ] **(You, in the console)** Enable **Email/Password** sign-in in Firebase console (Authentication → Sign-in method). Can't be checked from the code: verify on the first real sign-up (`operation-not-allowed` means it is still off)
 - [x] Add `firebase_auth` and `image_picker`; iOS photo/camera usage descriptions added to `Info.plist`
 - [x] `auth/data/auth_firebase.dart`: `AuthFirebase` wraps `FirebaseAuth` and throws `AuthFailure` instead of Firebase exceptions
 - [x] `auth/data/auth_repository.dart`: `AuthRepository` (`ChangeNotifier` singleton, in-memory accounts when there is no Firebase) with `currentUser`, `isLoading`, `signUp`, `signIn`, `sendPasswordReset`, `sendEmailVerification`, `reloadUser`, `updateDisplayName`, `reauthenticate`, `changePassword`, `deleteAccount`, `signOut`
@@ -32,40 +33,45 @@ After Phase 0 (`feature/m1-auth-profile`): analyze clean · 129 passed, the same
 - [x] `profile/domain/user_profile.dart` + `user_settings.dart` models
 - [x] Tests: `test/features/auth/` + `test/features/profile/` (35 tests)
 
-### Phase 1 — Screens
-- [ ] **Splash Screen** (new): logo/Lottie, waits for Firebase + auth state, then goes to Home (signed in) or Welcome (signed out)
-- [~] **Welcome**: UI exists; becomes the screen for signed-out users and links to Login and Register
-- [~] **Login**: UI exists, but "Log In" skips straight to Home
-  - [ ] Form validation (email format, password not empty)
-  - [ ] Real `signIn`, loading state, error messages
-  - [ ] Fix `Image.asset('')` (always shows the fallback icon)
-  - [ ] "Sign up" opens Register, "Forgot password?" opens Reset
-- [ ] **Register** (new): name, email, password, confirm password; creates the account and the `users/{uid}` profile
-- [ ] **Reset password** (new screen or dialog): `sendPasswordResetEmail` + confirmation message
-- [~] **Profile**: UI exists, but the name "Maya" and the stats are hard-coded
-  - [ ] Show the real name, email and photo
-  - [ ] Wire up "Settings" (it currently does nothing)
-  - [ ] Fix the bottom-bar Fridge tab (index 1 has no handler)
-- [ ] **Edit profile** (new): change display name (and email/password with re-authentication)
-- [ ] **Profile photo**: choose from gallery/camera, crop/compress, upload, show it on Profile (and on the Home header)
-- [ ] **Settings** (new), saved in `users/{uid}.settings`:
-  - [ ] Notifications on/off, connected to `NotificationService` (cancel or re-schedule alerts)
-  - [ ] Change password (re-authenticate with the current password, then update)
-  - [ ] Delete account (confirm + re-authenticate, delete the user's Firestore data, then the auth user)
-- [~] **Secure logout**: confirmation dialog exists, but it only navigates back
-  - [ ] `signOut()` + clear all repositories' in-memory data + cancel scheduled notifications + `pushAndRemoveUntil(Welcome)`
+### Phase 1 — Screens ✅ (2026-11-12, not yet committed)
+- [x] **Splash Screen** (new, listed as a feature in the doc but not in its screen list; kept as a screen for auth routing): logo/Lottie, waits for Firebase + auth state, then goes to Home (signed in) or Welcome (signed out)
+- [x] **Welcome**: screen for signed-out users; links to Login and Register
+- [x] **Login**
+  - [x] Form validation (email format, password not empty)
+  - [x] Real `signIn`, loading state, error messages
+  - [x] Fix `Image.asset('')` (now `assets/animations/food_login.gif`)
+  - [x] "Sign up" opens Register, "Forgot password?" opens Reset
+- [x] **Register** (new): name, email, password, confirm password; creates the account and the `users/{uid}` profile
+- [x] **Reset password** (new dedicated screen, opened from Login): `sendPasswordResetEmail` + confirmation message
+- [x] **Profile** (the stats stay placeholders for Membre 5)
+  - [x] Show the real name, email and photo
+  - [x] Wire up "Settings"
+  - [x] Fix the bottom-bar Fridge tab (index 1 has no handler)
+- [x] **Edit profile** (new screen): change display name and photo only (no email change; password change lives in Settings)
+- [x] **Profile photo**: gallery/camera, compressed, saved in `users/{uid}.photo`, shown on Profile
+  - [ ] Show it on the Home header too (Home belongs to Membre 5; coordinate)
+- [x] **Settings** (new), saved in `users/{uid}.settings`. The three items below go beyond the doc ("Paramètres utilisateur") on purpose:
+  - [x] Notifications on/off, connected to `NotificationService.setEnabled` (cancel or re-schedule alerts)
+  - [x] Change password (re-authenticate with the current password, then update)
+  - [x] Delete account (confirm + re-authenticate, delete the user's Firestore data, then the auth user)
+- [x] **Secure logout**
+  - [x] Profile "Verify your email" banner (dismissible, Resend + refresh check, never blocks access)
+  - [x] `signOut()` + cancel scheduled notifications + `pushAndRemoveUntil(Welcome)`
+  - [ ] Clear the other modules' in-memory data (needs the Phase 2 `clear()` mechanism)
 
-### Phase 2 — Integration (touches other members' code, coordinate first)
+### Phase 2 — Integration (the doc lists "Intégration des modules" as shared work: I build the mechanism and the gate, each owner reviews their own module's change)
 - [ ] Replace the `currentUserId = 'demo-user'` constant with the signed-in uid. It is used by `FridgeFirestore`, `ShoppingListFirestore`, `NotificationFirestore` and `DonationRepository`.
 - [ ] Repositories are `static final` singletons created at startup with a fixed user. Add a way to **re-bind on login / reset on logout** (e.g. `bindUser(uid)` / `clear()`), so a second account never sees the first one's data.
 - [ ] Auth gate: no module screen opens without a signed-in user
-- [ ] Switch `firestore.rules` to the auth-based rules (already written as a comment in the file)
+- [ ] Switch `firestore.rules` to the auth-based rules (already written as a comment in the file). **Do this last**, after every module uses the real uid
+- [x] `NotificationService`: cancel/re-schedule hook (`setEnabled`, `cancelAll`; Membre 3: please review) for the Settings toggle, logout and delete account (Membre 3 owns it; add a method only if missing)
+- [ ] Profile stats ("128 meals saved / 92%") stay as placeholders for Membre 5
 - [ ] Home header greeting uses the profile name (Home belongs to Membre 5; coordinate)
 
 ### Phase 3 — Tests & docs
 - [x] `test/features/auth/`: auth repository with a fake remote, error mapping, form validation (done in Phase 0)
-- [ ] Widget tests: Splash routing, Login, Register, Reset, Settings, Logout
-- [ ] Update `test/widget_test.dart` (the flow now goes through Splash and real login)
+- [x] Widget tests: Splash routing, Login, Register, Reset, Profile, Edit profile, Settings, Logout (`auth_screens_test.dart`, `profile_screens_test.dart`)
+- [x] Update `test/widget_test.dart` (the flow now goes through Splash and sign-up)
 - [ ] Update `CLAUDE.md`, `PROJECT_OVERVIEW.md` and the README "Membre 1" section
 
 ---
@@ -84,7 +90,7 @@ Implemented in the code under the "Membre 4" label (`lib/features/expiry/`, `lib
 Reported done in the README (`lib/features/list/`).
 - [x] Create list · add / delete items · mark bought · categories · view list · automatic purchase updates
 - [x] Screens: Shopping List, Add Item
-- [ ] **Fix 3 failing tests** in `test/features/list/list_screen_test.dart` ("Bought" text not found; likely off-screen in the test viewport)
+- [x] Fixed on `main` (the 3 `list_screen_test.dart` failures)
 
 ## Membre 5 — Recipes & Dashboard
 - [ ] Recipe suggestions from the fridge ingredients

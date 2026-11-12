@@ -57,7 +57,7 @@ features/<feature>/
 | Feature | Owner | domain | data | presentation |
 | --- | --- | --- | --- | --- |
 | `welcome` | — | — | — | `WelcomeScreen` |
-| `auth` | Membre 1 | `AppUser`, `AuthFailure`, form validators | `AuthRepository`, `AuthFirebase` | `LoginScreen` (UI not yet connected to `AuthRepository`) |
+| `auth` | Membre 1 | `AppUser`, `AuthFailure`, form validators | `AuthRepository`, `AuthFirebase` | `SplashScreen`, `LoginScreen`, `RegisterScreen`, `ResetPasswordScreen` (all use `AuthRepository`) |
 | `home` | — | — | — | `FoodSaverHomePage` (dashboard + bottom nav) |
 | `fridge` | Membre 2 | `FoodItem`, `FoodCategory`, `FridgeEvent`, `FridgeStats`, formatters | `FridgeRepository`, `FridgeFirestore` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
 | `donations` | Membre 3 | `Donation`, `DonationRequest`, `Beneficiary` | `DonationRepository`, `DonationFirestore` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen` |
@@ -80,7 +80,7 @@ The biggest files are `list_screen.dart` (~1,200 lines) and `fridge_screen.dart`
 1. `FirebaseSetup.init()` tries `Firebase.initializeApp`. On success `FirebaseSetup.isReady = true`; on failure (no config, tests) it logs the error and the app runs with in-memory data.
 2. `NotificationRepository.instance.pushHandler` is set to `NotificationService.instance.showNow`, so donation events also appear as phone notifications.
 3. `NotificationService.instance.init(FridgeRepository.instance)` starts without being awaited. It requests permission, then listens to the fridge and re-schedules the expiry alerts every time the fridge changes.
-4. `runApp(const FoodSaverApp())` → `WelcomeScreen`.
+4. `runApp(const FoodSaverApp())` → `SplashScreen` → Home (signed in) or `WelcomeScreen` (signed out).
 
 ### 3.2 Repositories (state)
 
@@ -137,7 +137,8 @@ Expiry alerts are never stored. They are recalculated from `FoodItem.expiryDate`
 ### 4.1 Navigation flow
 
 ```
-WelcomeScreen ──"Get Started"──► LoginScreen ──"Log In" (pushReplacement)──► FoodSaverHomePage
+SplashScreen ──► WelcomeScreen ──"Get Started"──► LoginScreen ──signIn──► FoodSaverHomePage
+                        └──"Create account"──► RegisterScreen ──signUp──► FoodSaverHomePage
                                                                                  │
      bottom NavigationBar: Home · Fridge · List · Profile                        │
      quick-action cards: Fridge, Recipes, Donations, Assistant                   │
@@ -212,7 +213,7 @@ Screens use `ListenableBuilder(listenable: XRepository.instance, builder: ...)` 
 
 | File | Covers |
 | --- | --- |
-| `widget_test.dart` | Welcome → Login → Home flow, bottom navigation |
+| `widget_test.dart` | Splash → Welcome → Login; sign-up → Home, bottom navigation |
 | `features/fridge/*` | repository logic, Firestore mapping with a fake Firestore, stats, screens |
 | `features/list/*` | shopping list repository and screen |
 | `features/donations/*` | donation repository rules and screens |
@@ -246,10 +247,9 @@ Android needs core library desugaring (already enabled in `android/app/build.gra
 
 ## 7. Known gaps / TODOs
 
-- **Authentication isn't connected yet.** `AuthRepository` and `UserProfileRepository` exist, but `LoginScreen` doesn't use them yet, and all module data is still stored under `users/demo-user`. Replace `currentUserId` with `FirebaseAuth.instance.currentUser!.uid` and switch to the auth-based rules commented in `firestore.rules`.
+- **Other modules aren't bound to the signed-in user yet.** Login, Register, Profile and Settings use Firebase Auth, but all module data is still stored under `users/demo-user`, so a second account would see the first one's data. Replace `currentUserId` with `FirebaseAuth.instance.currentUser!.uid` and switch to the auth-based rules commented in `firestore.rules`.
 - **Firestore rules are fully open** until 31 Jan 2027.
-- **Placeholder content** on Home and Profile: the user name "Maya", "12 meals protected", the "Fridge: 7 items" / "Recipes: 3 ideas" cards, "128 meals saved", "92% impact", "18 saved recipes". The Recipes feature does not exist yet.
-- **Navigation is duplicated** in each tab screen's `NavigationBar`. On `ProfileScreen` the Fridge tab (index 1) has no handler, and Home *pushes* tab screens, so the back stack grows. A single shell with an `IndexedStack` would fix both.
+- **Placeholder content** on Home and Profile: "12 meals protected", the "Fridge: 7 items" / "Recipes: 3 ideas" cards, "128 meals saved", "92% impact", "18 saved recipes". The Recipes feature does not exist yet.
+- **Navigation is duplicated** in each tab screen's `NavigationBar`. Home *pushes* tab screens, so the back stack grows. A single shell with an `IndexedStack` would fix both.
 - **Colours are hard-coded** in every widget instead of read from the theme, so restyling or adding dark mode means editing many files.
-- `LoginScreen` calls `Image.asset('')`, which always falls back to the error icon.
 - Beneficiaries for donations are simulated sample restaurants and charities, because beneficiary accounts don't exist yet.

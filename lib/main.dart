@@ -7,6 +7,7 @@ import 'core/firebase/firebase_setup.dart';
 import 'features/fridge/data/fridge_repository.dart';
 import 'features/notifications/data/notification_repository.dart';
 import 'features/notifications/data/notification_service.dart';
+import 'features/profile/data/user_profile_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,14 @@ Future<void> main() async {
   NotificationRepository.instance.pushHandler =
       NotificationService.instance.showNow;
   NotificationService.instance.init(FridgeRepository.instance);
+
+  // Settings > Notifications: follows the signed-in user's choice.
+  final profiles = UserProfileRepository.instance;
+  profiles.addListener(
+    () => NotificationService.instance.setEnabled(
+      profiles.settings.notificationsEnabled,
+    ),
+  );
 
   runApp(const FoodSaverApp());
 }

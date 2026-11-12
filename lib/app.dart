@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'features/welcome/presentation/welcome_screen.dart';
+import 'features/auth/presentation/splash_screen.dart';
 
 class FoodSaverApp extends StatelessWidget {
   const FoodSaverApp({super.key});
@@ -20,7 +20,7 @@ class FoodSaverApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF5F9F3),
         useMaterial3: true,
       ),
-      home: const WelcomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }
