@@ -58,7 +58,7 @@ class Donation {
 
   final String id;
 
-  /// User who offers the food (see `currentUserId`).
+  /// User who offers the food (the signed-in user, see `CurrentUser`).
   final String donorId;
 
   /// Id of the fridge food this donation comes from.

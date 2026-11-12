@@ -1,6 +1,7 @@
+// ignore_for_file: prefer_initializing_formals (private field, named parameter)
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../../core/firebase/firebase_setup.dart';
+import '../../../core/session/current_user.dart';
 import '../domain/food_category.dart';
 import '../domain/food_item.dart';
 import '../domain/fridge_event.dart';
@@ -36,14 +37,18 @@ class FridgeSettings {
 /// One document per food: foods are edited one by one, and the fridge is
 /// listened to in real time so every phone of the user stays up to date.
 class FridgeFirestore {
-  FridgeFirestore({FirebaseFirestore? firestore, this.userId = currentUserId})
-    : _db = firestore ?? FirebaseFirestore.instance;
+  FridgeFirestore({FirebaseFirestore? firestore, String? userId})
+    : _db = firestore ?? FirebaseFirestore.instance,
+      _userId = userId;
 
   /// Number of history events loaded for the statistics.
   static const historyLimit = 500;
 
   final FirebaseFirestore _db;
-  final String userId;
+  final String? _userId;
+
+  /// The signed-in user, unless a fixed id was given (tests).
+  String get userId => _userId ?? CurrentUser.uid;
 
   DocumentReference<Map<String, dynamic>> get _user =>
       _db.collection('users').doc(userId);

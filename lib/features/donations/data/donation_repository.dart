@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals (private field, named parameter)
 import 'package:flutter/material.dart';
 
 import '../../expiry/domain/expiry_alerts.dart';
@@ -9,6 +10,7 @@ import '../../notifications/data/notification_repository.dart';
 import '../domain/beneficiary.dart';
 import '../domain/donation.dart';
 import '../../../core/firebase/firebase_setup.dart';
+import '../../../core/session/current_user.dart';
 import 'donation_firestore.dart';
 
 /// In-memory store for the donations module.
@@ -20,11 +22,16 @@ class DonationRepository extends ChangeNotifier {
     FridgeRepository? fridge,
     this.notifications,
     this.remote,
-    this.userId = currentUserId,
+    String? userId,
     bool seed = true,
-  }) : fridge = fridge ?? FridgeRepository.instance {
+    bool autoConnect = true,
+  }) : fridge = fridge ?? FridgeRepository.instance,
+       _userId = userId,
+       _seedDemo = seed {
     if (remote != null) {
-      _loadRemote();
+      if (autoConnect) {
+        _loadRemote();
+      }
     } else if (seed) {
       _seed();
     }
@@ -33,15 +40,21 @@ class DonationRepository extends ChangeNotifier {
   static final DonationRepository instance = DonationRepository(
     notifications: NotificationRepository.instance,
     remote: FirebaseSetup.isReady ? DonationFirestore() : null,
+    autoConnect: false,
   );
+
+  final bool _seedDemo;
 
   final FridgeRepository fridge;
 
   /// Firestore storage; null in tests or when Firebase is not configured.
   final DonationFirestore? remote;
 
-  /// The donor using the app.
-  final String userId;
+  final String? _userId;
+
+  /// The donor using the app: the signed-in user, unless a fixed id was
+  /// given (tests).
+  String get userId => _userId ?? CurrentUser.uid;
 
   /// Receives an event when a beneficiary asks for a donation.
   final NotificationRepository? notifications;
@@ -299,6 +312,22 @@ class DonationRepository extends ChangeNotifier {
     _donations[index] = updated;
     notifyListeners();
     _sync(() => remote!.save(updated));
+  }
+
+  /// Loads the donations (after [clear]).
+  void connect() {
+    if (remote != null) {
+      _loadRemote();
+    } else if (_seedDemo) {
+      _seed();
+      notifyListeners();
+    }
+  }
+
+  /// Forgets every donation held in memory.
+  void clear() {
+    _donations.clear();
+    notifyListeners();
   }
 
   Future<void> _loadRemote() async {

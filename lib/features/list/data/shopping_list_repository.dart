@@ -14,9 +14,17 @@ import 'shopping_list_firestore.dart';
 /// The data lives in memory; when [remote] is set (Firebase connected), it is
 /// loaded from Firestore at start-up and every change is saved there too.
 class ShoppingListRepository extends ChangeNotifier {
-  ShoppingListRepository({bool seed = true, this.remote}) {
+  /// [autoConnect] false waits for [connect] (the app-wide instance, bound
+  /// to the signed-in user by `SessionBinder`).
+  ShoppingListRepository({
+    bool seed = true,
+    this.remote,
+    bool autoConnect = true,
+  }) : _seedDemo = seed {
     if (remote != null) {
-      _loadRemote();
+      if (autoConnect) {
+        _loadRemote();
+      }
     } else if (seed) {
       _seed();
     }
@@ -24,7 +32,10 @@ class ShoppingListRepository extends ChangeNotifier {
 
   static final ShoppingListRepository instance = ShoppingListRepository(
     remote: FirebaseSetup.isReady ? ShoppingListFirestore() : null,
+    autoConnect: false,
   );
+
+  final bool _seedDemo;
 
   /// Firestore storage; null in tests or when Firebase is not configured.
   final ShoppingListFirestore? remote;
@@ -366,6 +377,27 @@ class ShoppingListRepository extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   // Firestore
   // ---------------------------------------------------------------------------
+
+  /// Loads the signed-in user's lists (after [clear]).
+  void connect() {
+    if (remote != null) {
+      _loadRemote();
+    } else if (_seedDemo) {
+      _seed();
+      notifyListeners();
+    }
+  }
+
+  /// Forgets the previous user's lists.
+  void clear() {
+    _lists.clear();
+    _categories
+      ..clear()
+      ..addAll(defaultShoppingCategories);
+    _selectedListId = null;
+    isLoading = false;
+    notifyListeners();
+  }
 
   Future<void> _loadRemote() async {
     isLoading = true;
