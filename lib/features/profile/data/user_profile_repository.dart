@@ -105,6 +105,21 @@ class UserProfileRepository extends ChangeNotifier {
     _sync(() => remote!.saveDisplayName(profile.uid, name));
   }
 
+  /// Changes the name of the restaurant (restaurant accounts only).
+  void updateBusinessName(String businessName) {
+    final profile = _requireProfile();
+    if (profile.role != UserRole.restaurant) {
+      throw StateError('Only restaurants have a business name');
+    }
+    final name = businessName.trim();
+    if (name.isEmpty) {
+      throw ArgumentError('Business name cannot be empty');
+    }
+    _profile = profile.copyWith(businessName: name);
+    notifyListeners();
+    _sync(() => remote!.saveBusinessName(profile.uid, name));
+  }
+
   /// Sets the photo (a base64 JPEG), or removes it when [photoBase64] is null.
   void updatePhoto(String? photoBase64) {
     final profile = _requireProfile();

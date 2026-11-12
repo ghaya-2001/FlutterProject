@@ -12,6 +12,7 @@ Baseline (2026-11-01, `main` @ `2d1bd88`): `flutter analyze` clean · `flutter t
 After Phase 0 (`feature/m1-auth-profile`): analyze clean · 129 passed, the same 3 failed.
 After Phase 1 (2026-11-12): analyze clean · **166 passed, 0 failed** (the 3 list tests were fixed on `main` by Membre 2).
 After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
+After business-name editing (2026-11-13): analyze clean · **191 passed, 0 failed** · 27 rules tests.
 
 ---
 
@@ -66,9 +67,9 @@ After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 - [x] Auth gate: `_AuthGate` in `app.dart` returns to Welcome if the session ends while the app is open; Splash and logout already route on auth state
 - [~] `firestore.rules` is now the auth-based version **with roles** (old dev rules kept as a comment). Tested with the emulator (`firestore-tests/`, 27 tests, run `npm test` there; it found and fixed a self-promotion hole). **Not deployed**: deploy only after every teammate build uses the real uid and the donor screens follow the new request flow
 - [x] Roles (decided 2026-11-13, beyond the original doc): `user` / `restaurant` / `admin` in `users/{uid}.role`; chosen at Register (user or restaurant + business name), immutable, admin only from the Firebase console; `RoleHome` + `RoleShell` give restaurants and admins their own start screen (placeholder donation tab + Profile). Tests: `user_role_test.dart`
-- [ ] Set the first admin by hand: Firebase console → Firestore → `users/{uid}` → add `role` = `admin`
-- [ ] Clear the other modules in-memory data on logout: done through `SessionBinder`; verify on a real device with two accounts
-- [ ] Edit profile for restaurants: change the business name (not built; the rules allow it)
+- [x] Set the first admin by hand: Firebase console → Firestore → `users/{uid}` → add `role` = `admin` (done and checked on a device, 2026-11-13)
+- [x] Clear the other modules in-memory data on logout: done through `SessionBinder`; verified on a real device with two accounts (2026-11-13)
+- [x] Edit profile for restaurants: change the business name (`UserProfileRepository.updateBusinessName`, field shown to restaurants only)
 - [x] `NotificationService`: cancel/re-schedule hook (`setEnabled`, `cancelAll`; Membre 3: please review) for the Settings toggle, logout and delete account (Membre 3 owns it; add a method only if missing)
 - [ ] Profile stats ("128 meals saved / 92%") stay as placeholders for Membre 5
 - [ ] Home header greeting uses the profile name (Home belongs to Membre 5; coordinate)
@@ -77,7 +78,7 @@ After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 - [x] `test/features/auth/`: auth repository with a fake remote, error mapping, form validation (done in Phase 0)
 - [x] Widget tests: Splash routing, Login, Register, Reset, Profile, Edit profile, Settings, Logout (`auth_screens_test.dart`, `profile_screens_test.dart`)
 - [x] Update `test/widget_test.dart` (the flow now goes through Splash and sign-up)
-- [ ] Update `CLAUDE.md`, `PROJECT_OVERVIEW.md` and the README "Membre 1" section
+- [x] Update `CLAUDE.md`, `PROJECT_OVERVIEW.md` and the README "Membre 1" section
 
 ---
 

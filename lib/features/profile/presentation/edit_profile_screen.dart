@@ -7,9 +7,11 @@ import '../../auth/domain/auth_validators.dart';
 import '../../auth/presentation/widgets/auth_widgets.dart';
 import '../data/profile_photo.dart';
 import '../data/user_profile_repository.dart';
+import '../domain/user_role.dart';
 import 'widgets/profile_avatar.dart';
 
-/// Change the display name and the profile photo.
+/// Change the display name, the profile photo and (restaurants) the business
+/// name.
 /// Pops with a message for the Profile screen to show.
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key, this.repository, this.photoPicker});
@@ -29,6 +31,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final _nameController = TextEditingController(
     text: _repository.profile?.displayName ?? '',
   );
+  late final _businessController = TextEditingController(
+    text: _repository.profile?.businessName ?? '',
+  );
   bool _saving = false;
   String? _error;
 
@@ -38,6 +43,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _businessController.dispose();
     super.dispose();
   }
 
@@ -106,6 +112,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
     try {
       await _repository.updateDisplayName(_nameController.text);
+      if (_repository.role == UserRole.restaurant) {
+        _repository.updateBusinessName(_businessController.text);
+      }
       if (mounted) {
         Navigator.of(context).pop<String>('Profile updated');
       }
@@ -164,6 +173,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                if (_repository.role == UserRole.restaurant) ...[
+                  TextFormField(
+                    key: const ValueKey('edit-profile-business-field'),
+                    controller: _businessController,
+                    textCapitalization: TextCapitalization.words,
+                    validator: validateBusinessName,
+                    decoration: authInputDecoration(
+                      label: 'Restaurant name',
+                      icon: Icons.storefront_outlined,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                ],
                 TextFormField(
                   key: const ValueKey('edit-profile-name-field'),
                   controller: _nameController,

@@ -67,6 +67,9 @@ class UserProfileFirestore {
   Future<void> saveDisplayName(String uid, String displayName) =>
       _user(uid).set({'displayName': displayName}, SetOptions(merge: true));
 
+  Future<void> saveBusinessName(String uid, String businessName) =>
+      _user(uid).set({'businessName': businessName}, SetOptions(merge: true));
+
   /// Saves the photo, or removes it when [photoBase64] is null.
   Future<void> savePhoto(String uid, String? photoBase64) => _user(
     uid,

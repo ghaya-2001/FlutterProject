@@ -10,6 +10,7 @@ import 'package:foodsaver/features/profile/data/user_profile_repository.dart';
 import 'package:foodsaver/features/profile/domain/user_profile.dart';
 import 'package:foodsaver/features/profile/domain/user_role.dart';
 import 'package:foodsaver/features/profile/domain/user_settings.dart';
+import 'package:foodsaver/features/profile/presentation/edit_profile_screen.dart';
 import 'package:foodsaver/features/roles/presentation/role_home.dart';
 import 'package:foodsaver/features/welcome/presentation/welcome_screen.dart';
 
@@ -18,6 +19,7 @@ import 'package:foodsaver/features/welcome/presentation/welcome_screen.dart';
 class FakeUserProfileFirestore implements UserProfileFirestore {
   final snapshots = <String, StreamController<Map<String, dynamic>?>>{};
   final created = <UserProfile>[];
+  final businessNames = <String>[];
 
   StreamController<Map<String, dynamic>?> snapshotsOf(String uid) =>
       snapshots.putIfAbsent(uid, StreamController.broadcast);
@@ -32,6 +34,10 @@ class FakeUserProfileFirestore implements UserProfileFirestore {
 
   @override
   Future<void> saveDisplayName(String uid, String displayName) async {}
+
+  @override
+  Future<void> saveBusinessName(String uid, String businessName) async =>
+      businessNames.add('$uid $businessName');
 
   @override
   Future<void> savePhoto(String uid, String? photoBase64) async {}
@@ -336,6 +342,95 @@ void main() {
       );
       expect(find.text('Admin'), findsNothing);
       expect(find.text('Individual'), findsOneWidget);
+    });
+  });
+
+  group('business name', () {
+    late AuthRepository auth;
+    late FakeUserProfileFirestore remote;
+    late UserProfileRepository profiles;
+
+    setUp(() {
+      auth = AuthRepository();
+      remote = FakeUserProfileFirestore();
+      profiles = UserProfileRepository(auth: auth, remote: remote);
+    });
+
+    Future<void> signUpAs(UserRole role) async {
+      if (role != UserRole.user) {
+        profiles.prepareSignUp(role: role, businessName: 'Le Jardin');
+      }
+      await auth.signUp(
+        displayName: 'Sam',
+        email: 'sam@example.com',
+        password: 'secret12',
+      );
+    }
+
+    test('a restaurant can rename its business, saved in Firestore', () async {
+      await signUpAs(UserRole.restaurant);
+      profiles.updateBusinessName('  Chez Sam ');
+      expect(profiles.profile?.businessName, 'Chez Sam');
+      expect(remote.businessNames.single, endsWith('Chez Sam'));
+    });
+
+    test('empty names and non-restaurants are refused', () async {
+      await signUpAs(UserRole.restaurant);
+      expect(() => profiles.updateBusinessName('  '), throwsArgumentError);
+      await auth.signOut();
+      await auth.signUp(
+        displayName: 'Maya',
+        email: 'maya@example.com',
+        password: 'secret12',
+      );
+      expect(() => profiles.updateBusinessName('X'), throwsStateError);
+    });
+  });
+
+  group('EditProfileScreen business name', () {
+    testWidgets('a restaurant edits its business name', (tester) async {
+      final auth = AuthRepository();
+      final profiles = UserProfileRepository(auth: auth);
+      profiles.prepareSignUp(
+        role: UserRole.restaurant,
+        businessName: 'Le Jardin',
+      );
+      await auth.signUp(
+        displayName: 'Sam',
+        email: 'sam@example.com',
+        password: 'secret12',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: EditProfileScreen(repository: profiles)),
+      );
+      final field = find.descendant(
+        of: find.byKey(const ValueKey('edit-profile-business-field')),
+        matching: find.byType(EditableText),
+      );
+      expect(field, findsOneWidget);
+      await tester.enterText(field, 'Chez Sam');
+      final save = find.byKey(const ValueKey('edit-profile-save-button'));
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      expect(profiles.profile?.businessName, 'Chez Sam');
+    });
+
+    testWidgets('a normal user has no business name field', (tester) async {
+      final auth = AuthRepository();
+      final profiles = UserProfileRepository(auth: auth);
+      await auth.signUp(
+        displayName: 'Maya',
+        email: 'maya@example.com',
+        password: 'secret12',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: EditProfileScreen(repository: profiles)),
+      );
+      expect(
+        find.byKey(const ValueKey('edit-profile-business-field')),
+        findsNothing,
+      );
     });
   });
 }

@@ -16,6 +16,41 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+## Membre 1 — Authentification et Profil (Auth & Profile module)
+
+Code: `lib/features/auth/`, `lib/features/profile/`, `lib/features/roles/`, `lib/features/welcome/`, `lib/core/session/`
+
+| Folder | Content |
+| --- | --- |
+| `auth/domain/` | `AppUser`, `AuthFailure` (error code → English message), form validators |
+| `auth/data/` | `AuthRepository` (ChangeNotifier; in-memory accounts without Firebase), `AuthFirebase` (the only file importing `firebase_auth`), `SessionBinder` |
+| `auth/presentation/` | `SplashScreen`, `LoginScreen`, `RegisterScreen`, `ResetPasswordScreen`, shared form widgets, logout helpers |
+| `profile/` | `UserProfile`, `UserSettings`, `UserRole`, `UserProfileRepository` + `UserProfileFirestore`, `ProfileScreen`, `EditProfileScreen`, `SettingsScreen` |
+| `roles/presentation/` | `RoleHome` (start screen by role), `RoleShell` (restaurants and admins) |
+| `core/session/` | `CurrentUser.uid`, the signed-in uid read by every Firestore class |
+
+| Feature (cahier des charges) | Where |
+| --- | --- |
+| Splash Screen | First screen: waits for Firebase, then opens the app (signed in) or Welcome (signed out) |
+| Welcome Screen | Get Started → Login, Create account → Register |
+| Inscription | Register: name, email, password, confirmation; Individual or Restaurant (with business name). A verification email is sent but never blocks access |
+| Connexion | Login: validation, loading state, error messages |
+| Réinitialisation du mot de passe | Login → Forgot password? → Reset password (reset link by email) |
+| Gestion du profil utilisateur | Profile tab: real name, email, photo, verify-email banner |
+| Modification des informations personnelles | Profile → Edit profile: name (and business name for restaurants) |
+| Photo de profil | Edit profile → tap the photo: gallery, camera or remove. Stored as a small base64 JPEG in `users/{uid}.photo` (no Firebase Storage) |
+| Paramètres utilisateur | Profile → Settings: notifications on/off, change password, delete account (all the user data, then the account) |
+| Déconnexion sécurisée | Profile → Logout: confirmation, sign out, cancel phone alerts, back to Welcome with no way back |
+
+Beyond the original split:
+- **Roles:** `user`, `restaurant` and `admin` (`users/{uid}.role`). Chosen at sign-up (never admin), fixed afterwards. The first admin is set by hand in the Firebase console (Firestore → `users/{uid}` → `role` = `admin`). Restaurants and admins get their own start screen without the fridge, list or recipes; their donation tab is a placeholder until the donation workflow is built (see `TODO.md`).
+- **Per-user data:** each repository has `connect()` and `clear()`, driven by `SessionBinder`, so accounts never see each other's data. An `_AuthGate` returns to Welcome if the session ends while the app is open.
+- **Security rules:** `firestore.rules`, tested with the emulator (`cd firestore-tests && npm test`, needs the Firebase CLI and Java).
+
+Sign-in method: email and password only (enable it in Firebase console → Authentication → Sign-in method).
+
+Tests: `test/features/auth/`, `test/features/profile/`, `test/widget_test.dart`, `firestore-tests/`
+
 ## Membre 2 — Gestion du Frigo (Fridge module)
 
 Code: `lib/features/fridge/`
