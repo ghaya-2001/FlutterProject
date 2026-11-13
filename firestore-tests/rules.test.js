@@ -146,6 +146,16 @@ describe('private data users/{uid}/...', () => {
     await assertFails(getDoc(doc(as('rest1'), 'users/donor1/fridge_items/f1')));
     await assertFails(getDoc(doc(as('admin1'), 'users/donor1/fridge_items/f1')));
   });
+
+  it('keeps saved recipes private to the owner (Membre 5)', async () => {
+    const path = 'users/donor1/saved_recipes/shakshuka';
+    await assertSucceeds(setDoc(doc(as('donor1'), path), { savedAt: new Date() }));
+    await assertSucceeds(getDoc(doc(as('donor1'), path)));
+    await assertSucceeds(deleteDoc(doc(as('donor1'), path)));
+    await assertFails(getDoc(doc(as('other1'), path)));
+    await assertFails(setDoc(doc(as('admin1'), path), { savedAt: new Date() }));
+    await assertFails(getDoc(doc(anon(), path)));
+  });
 });
 
 describe('donation events users/{uid}/notifications', () => {

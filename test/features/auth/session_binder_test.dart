@@ -8,6 +8,7 @@ import 'package:foodsaver/features/list/data/shopping_list_repository.dart';
 import 'package:foodsaver/features/notifications/data/notification_repository.dart';
 import 'package:foodsaver/features/profile/data/user_profile_repository.dart';
 import 'package:foodsaver/features/profile/domain/user_role.dart';
+import 'package:foodsaver/features/recipes/data/saved_recipes_repository.dart';
 
 void main() {
   late AuthRepository auth;
@@ -15,6 +16,7 @@ void main() {
   late FridgeRepository fridge;
   late ShoppingListRepository shopping;
   late DonationRepository donations;
+  late SavedRecipesRepository savedRecipes;
   late SessionBinder binder;
 
   setUp(() {
@@ -28,6 +30,7 @@ void main() {
       fridge: fridge,
       notifications: notifications,
     );
+    savedRecipes = SavedRecipesRepository(clock: () => now);
     binder = SessionBinder(
       auth: auth,
       profiles: profiles,
@@ -35,6 +38,7 @@ void main() {
       shopping: shopping,
       notifications: notifications,
       donations: donations,
+      savedRecipes: savedRecipes,
     );
   });
 
@@ -73,6 +77,15 @@ void main() {
     expect(fridge.items, isEmpty);
     expect(shopping.lists, isEmpty);
     expect(donations.donations, isEmpty);
+  });
+
+  test('logout forgets the saved recipes (Membre 5)', () async {
+    await signUp('a@example.com');
+    savedRecipes.save('shakshuka');
+    expect(savedRecipes.count, 1);
+
+    await auth.signOut();
+    expect(savedRecipes.saved, isEmpty);
   });
 
   test('a second account does not keep the first one\'s changes', () async {
