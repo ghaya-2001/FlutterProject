@@ -86,7 +86,7 @@ After business-name editing (2026-11-13): analyze clean · **191 passed, 0 faile
 Roles exist (see Phase 2 above); the donation screens still follow the old flow where the donor accepts requests on their own donation, and restaurants are `sampleBeneficiaries`. Target flow, agreed 2026-11-13:
 - [ ] A user creates a donation; it appears as available to every restaurant
 - [x] Restaurants browse available donations and send a request (optional message) from the **Donations** tab of `RoleShell` (`RestaurantDonationsTab`, `DonationRepository.refresh()`); the beneficiary is the restaurant account (`businessName`). Test: `restaurant_donations_tab_test.dart`
-- [ ] The admin sees all pending requests in the **Requests** tab and accepts or refuses; accepting one reserves the donation and refuses the other requests on it
+- [x] The admin sees all pending requests in the **Requests** tab and accepts or refuses; accepting one reserves the donation and refuses the other requests on it
 - [ ] The donor sees the status and gets a notification (rules already allow restaurant/admin to create an event in the donor notifications), then marks the donation collected after the handover (the admin can as a fallback)
 - [ ] Remove the donor-side accept/refuse buttons (the new rules forbid them)
 - [ ] Manual donations without a fridge item ("Donate something else": name, category, quantity, optional expiry; food and pantry items only)

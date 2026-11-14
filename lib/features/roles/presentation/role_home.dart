@@ -5,6 +5,7 @@ import '../../home/presentation/home_screen.dart';
 import '../../profile/data/user_profile_repository.dart';
 import '../../profile/domain/user_role.dart';
 import '../../donations/data/donation_repository.dart';
+import 'admin_requests_tab.dart';
 import 'restaurant_donations_tab.dart';
 import 'role_shell.dart';
 
@@ -55,6 +56,11 @@ class RoleHome extends StatelessWidget {
               tabIcon: Icons.fact_check_outlined,
               title: 'Pending requests',
               emptyMessage: 'Donation requests from restaurants will appear here for you to accept or refuse.',
+              tab: AdminRequestsTab(
+                title: 'Pending requests',
+                emptyMessage: 'Donation requests from restaurants will appear here for you to accept or refuse.',
+                donations: donations,
+              ),
             );
         }
       },

@@ -83,6 +83,23 @@ class DonationRepository extends ChangeNotifier {
       )
       .toList();
 
+  /// Donations from every user with a request waiting for the admin's answer,
+  /// oldest request first.
+  List<Donation> get donationsAwaitingAnswer {
+    final result = _donations
+        .where(
+          (donation) =>
+              donation.status == DonationStatus.available &&
+              donation.pendingRequests.isNotEmpty,
+        )
+        .toList();
+    DateTime oldest(Donation d) => d.pendingRequests
+        .map((request) => request.createdAt)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+    result.sort((a, b) => oldest(a).compareTo(oldest(b)));
+    return result;
+  }
+
   int get collectedCount => donations
       .where((donation) => donation.status == DonationStatus.collected)
       .length;
