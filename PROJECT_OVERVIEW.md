@@ -252,4 +252,4 @@ Android needs core library desugaring (already enabled in `android/app/build.gra
 - **Placeholder content** on Home and Profile: "12 meals protected", the "Fridge: 7 items" / "Recipes: 3 ideas" cards, "128 meals saved", "92% impact", "18 saved recipes". The Recipes feature does not exist yet.
 - **Navigation is duplicated** in each tab screen's `NavigationBar`. Home *pushes* tab screens, so the back stack grows. A single shell with an `IndexedStack` would fix both.
 - **Colours are hard-coded** in every widget instead of read from the theme, so restyling or adding dark mode means editing many files.
-- Beneficiaries for donations are simulated sample restaurants and charities, because beneficiary accounts don't exist yet.
+- Only restaurants request donations (Donations tab of their shell); users have no "Available" tab or request button, and `DonationRepository.requestDonation` refuses the donor's own id. `sampleBeneficiaries` remain only as seed/test data.

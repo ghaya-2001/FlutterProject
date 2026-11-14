@@ -132,6 +132,21 @@ void main() {
     expect(updated.pendingRequests, isEmpty);
   });
 
+  test('the donor cannot request their own donation', () {
+    final donation = donateTomatoes();
+    final self = Beneficiary(
+      id: repository.userId,
+      name: 'Me',
+      type: BeneficiaryType.restaurant,
+      area: '',
+    );
+    expect(
+      () => repository.requestDonation(donation.id, self),
+      throwsStateError,
+    );
+    expect(repository.donationById(donation.id)!.requests, isEmpty);
+  });
+
   test('a beneficiary cannot ask twice, nor ask a reserved donation', () {
     final donation = donateTomatoes();
     final request = repository.requestDonation(

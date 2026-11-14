@@ -125,14 +125,14 @@ Code: `lib/features/donations/`
 | Aliments pouvant être proposés au don | Donations → "Could be donated" (fridge food expiring within 7 days) |
 | Créer une annonce à partir d'un aliment du frigo | "New donation", or "Donate" on Food Details / Expiring soon |
 | Quantité et date limite de consommation | Create Donation (quantity ≤ stock, date ≤ fridge expiry date) + optional description |
-| Consultation des annonces disponibles | Donations → "Available" tab (what beneficiaries see) |
-| Demande de récupération par un bénéficiaire | "Request" (simulated: choose a sample restaurant or charity) |
+| Consultation des annonces disponibles | Restaurant account → Donations tab |
+| Demande de récupération par un bénéficiaire | Restaurant account → "Request" (users cannot request, not even their own donation) |
 | Acceptation / refus d'une demande | Donation Details → Accept / Refuse |
 | Statut : disponible, réservé, récupéré | Accept → Reserved, "Mark as collected" → Collected |
 | Historique des dons | History icon on Donations, or Profile → My donations |
 
 Rules: the donated quantity is removed from the fridge; cancelling an available donation puts it back.
-Beneficiary accounts don't exist yet, so requests are simulated (allowed by the cahier des charges).
+Beneficiaries are restaurant accounts; the old simulated requests were removed from the user screens.
 
 ## Membre 4 — Courses, Péremption, Notifications et Chatbot
 

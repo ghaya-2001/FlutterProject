@@ -10,12 +10,10 @@ import 'donation_details_screen.dart';
 import 'donation_history_screen.dart';
 import 'widgets/donation_widgets.dart';
 
-enum _DonationTab { mine, available }
-
 /// Main donations screen.
 ///
-/// "My donations": foods worth donating and the user's active donations.
-/// "Available": what partner restaurants and charities see and can request.
+/// Foods worth donating and the user's active donations. Users only offer
+/// food: restaurants are the ones who request it (see `RoleHome`).
 class DonationsScreen extends StatefulWidget {
   const DonationsScreen({super.key, this.repository});
 
@@ -27,8 +25,6 @@ class DonationsScreen extends StatefulWidget {
 }
 
 class _DonationsScreenState extends State<DonationsScreen> {
-  _DonationTab _tab = _DonationTab.mine;
-
   DonationRepository get _repository =>
       widget.repository ?? DonationRepository.instance;
 
@@ -60,30 +56,17 @@ class _DonationsScreenState extends State<DonationsScreen> {
     }
   }
 
-  Future<void> _request(Donation donation) async {
-    final name = await showRequestDonationSheet(
-      context,
-      repository: _repository,
-      donation: donation,
-    );
-    if (name != null && mounted) {
-      showAppSnackBar(context, 'Request sent by $name');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: _tab == _DonationTab.mine
-          ? FloatingActionButton.extended(
-              key: const ValueKey('new-donation-button'),
-              onPressed: _create,
-              backgroundColor: const Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('New donation'),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton.extended(
+        key: const ValueKey('new-donation-button'),
+        onPressed: _create,
+        backgroundColor: const Color(0xFF2E7D32),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('New donation'),
+      ),
       body: SafeArea(
         child: ListenableBuilder(
           listenable: Listenable.merge([_repository, _repository.fridge]),
@@ -109,32 +92,7 @@ class _DonationsScreenState extends State<DonationsScreen> {
                 const SizedBox(height: 18),
                 _SummaryCard(repository: _repository),
                 const SizedBox(height: 18),
-                SegmentedButton<_DonationTab>(
-                  segments: const [
-                    ButtonSegment(
-                      value: _DonationTab.mine,
-                      label: Text('My donations'),
-                      icon: Icon(Icons.volunteer_activism_rounded),
-                    ),
-                    ButtonSegment(
-                      value: _DonationTab.available,
-                      label: Text('Available'),
-                      icon: Icon(Icons.storefront_rounded),
-                    ),
-                  ],
-                  selected: {_tab},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _tab = selection.first),
-                  style: SegmentedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    selectedBackgroundColor: const Color(0xFFC8E6C9),
-                    selectedForegroundColor: const Color(0xFF1B5E20),
-                  ),
-                ),
-                if (_tab == _DonationTab.mine)
-                  ..._buildMine()
-                else
-                  ..._buildAvailable(),
+                ..._buildMine(),
               ],
             );
           },
@@ -169,56 +127,6 @@ class _DonationsScreenState extends State<DonationsScreen> {
       else
         for (final donation in active)
           DonationCard(donation: donation, onTap: () => _openDetails(donation)),
-    ];
-  }
-
-  List<Widget> _buildAvailable() {
-    final available = _repository.availableDonations;
-    return [
-      const SizedBox(height: 16),
-      Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE3F2FD),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.info_outline_rounded, color: Color(0xFF1565C0)),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'This is what partner restaurants and charities see. '
-                'Tap "Request" to simulate a request from one of them.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF1B1B1B)),
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SectionTitle('Available donations'),
-      if (available.isEmpty)
-        const EmptyCard(
-          icon: Icons.inventory_2_outlined,
-          message: 'No donation is available right now.',
-        )
-      else
-        for (final donation in available)
-          DonationCard(
-            donation: donation,
-            onTap: () => _openDetails(donation),
-            trailing: TextButton(
-              onPressed: () => _request(donation),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: const Color(0xFF2E7D32),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text('Request'),
-            ),
-          ),
     ];
   }
 }

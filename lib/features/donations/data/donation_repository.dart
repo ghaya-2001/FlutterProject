@@ -287,7 +287,7 @@ class DonationRepository extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
-  // Beneficiary actions (simulated: there are no beneficiary accounts yet)
+  // Beneficiary actions (restaurants only; never the donor)
   // ---------------------------------------------------------------------------
 
   DonationRequest requestDonation(
@@ -298,6 +298,9 @@ class DonationRepository extends ChangeNotifier {
     final donation = _require(donationId);
     if (donation.status != DonationStatus.available) {
       throw StateError('This donation is no longer available');
+    }
+    if (beneficiary.id == donation.donorId) {
+      throw StateError('You cannot request your own donation');
     }
     if (hasPendingRequestFrom(donation, beneficiary)) {
       throw StateError('${beneficiary.name} already asked for this donation');
