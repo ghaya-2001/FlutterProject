@@ -72,7 +72,7 @@ After business-name editing (2026-11-13): analyze clean · **191 passed, 0 faile
 - [x] Edit profile for restaurants: change the business name (`UserProfileRepository.updateBusinessName`, field shown to restaurants only)
 - [x] `NotificationService`: cancel/re-schedule hook (`setEnabled`, `cancelAll`; Membre 3: please review) for the Settings toggle, logout and delete account (Membre 3 owns it; add a method only if missing)
 - [ ] Profile stats ("128 meals saved / 92%") stay as placeholders for Membre 5
-- [ ] Home header greeting uses the profile name (Home belongs to Membre 5; coordinate)
+- [x] Home header greeting uses the profile name (fixed 2026-11-14: `FoodSaverHomePage` reads `UserProfileRepository`, falling back to the auth name; Home belongs to Membre 5, only the greeting was touched). Tests: `test/features/home/home_greeting_test.dart`
 
 ### Phase 3 — Tests & docs
 - [x] `test/features/auth/`: auth repository with a fake remote, error mapping, form validation (done in Phase 0)
