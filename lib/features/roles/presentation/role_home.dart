@@ -8,6 +8,7 @@ import '../../home/presentation/home_screen.dart';
 import '../../profile/data/user_profile_repository.dart';
 import '../../profile/domain/user_role.dart';
 import 'admin_requests_tab.dart';
+import 'donation_stock_receiver.dart';
 import 'request_history_tab.dart';
 import 'restaurant_donations_tab.dart';
 import 'role_shell.dart';
@@ -50,42 +51,48 @@ class RoleHome extends StatelessWidget {
           case UserRole.user:
             return const FoodSaverHomePage();
           case UserRole.restaurant:
-            return RoleShell(
-              key: const ValueKey('restaurant-shell'),
+            final stock = fridge ?? FridgeRepository.instance;
+            return DonationStockReceiver(
+              donations: donations ?? DonationRepository.instance,
+              fridge: stock,
               profiles: profiles,
-              auth: auth,
-              tabs: [
-                RoleTab(
-                  label: 'Donations',
-                  icon: Icons.volunteer_activism_outlined,
-                  child: RestaurantDonationsTab(
-                    title: 'Available donations',
-                    emptyMessage: 'Donations offered by users will appear here, so you can request them.',
-                    donations: donations,
-                    profiles: profiles,
+              child: RoleShell(
+                key: const ValueKey('restaurant-shell'),
+                profiles: profiles,
+                auth: auth,
+                tabs: [
+                  RoleTab(
+                    label: 'Donations',
+                    icon: Icons.volunteer_activism_outlined,
+                    child: RestaurantDonationsTab(
+                      title: 'Available donations',
+                      emptyMessage: 'Donations offered by users will appear here, so you can request them.',
+                      donations: donations,
+                      profiles: profiles,
+                    ),
                   ),
-                ),
-                RoleTab(
-                  label: 'Stock',
-                  icon: Icons.kitchen_outlined,
-                  child: FridgeScreen(
-                    repository: fridge,
-                    embedded: true,
-                    canDonate: false,
+                  RoleTab(
+                    label: 'Stock',
+                    icon: Icons.kitchen_outlined,
+                    child: FridgeScreen(
+                      repository: stock,
+                      embedded: true,
+                      canDonate: false,
+                    ),
                   ),
-                ),
-                RoleTab(
-                  label: 'History',
-                  icon: Icons.history_rounded,
-                  child: RequestHistoryTab(
-                    title: 'My requests',
-                    emptyMessage: 'The donations you request will be listed here with their answer.',
-                    forRestaurant: true,
-                    donations: donations,
-                    profiles: profiles,
+                  RoleTab(
+                    label: 'History',
+                    icon: Icons.history_rounded,
+                    child: RequestHistoryTab(
+                      title: 'My requests',
+                      emptyMessage: 'The donations you request will be listed here with their answer.',
+                      forRestaurant: true,
+                      donations: donations,
+                      profiles: profiles,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           case UserRole.admin:
             return RoleShell(

@@ -120,6 +120,14 @@ class DonationRepository extends ChangeNotifier {
     return result;
   }
 
+  /// Donations whose request from [beneficiaryId] was accepted by the admin,
+  /// newest first: the food a restaurant is going to receive.
+  List<Donation> acceptedFor(String beneficiaryId) => _sorted(
+    _donations.where(
+      (donation) => donation.acceptedRequest?.beneficiary.id == beneficiaryId,
+    ),
+  );
+
   int get collectedCount => donations
       .where((donation) => donation.status == DonationStatus.collected)
       .length;

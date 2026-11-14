@@ -162,4 +162,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('My requests'), findsOneWidget);
   });
+
+  testWidgets('an accepted donation is added to the restaurant stock once', (
+    tester,
+  ) async {
+    final stock = FridgeRepository(clock: () => today, seed: false);
+    final request = donations.requestDonation(tomatoes.id, me);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RoleHome(
+          profiles: profiles,
+          auth: auth,
+          donations: donations,
+          fridge: stock,
+        ),
+      ),
+    );
+    expect(stock.items, isEmpty);
+
+    donations.acceptRequest(tomatoes.id, request.id);
+    await tester.pump();
+    expect(stock.items.map((item) => item.name), ['Tomatoes']);
+    expect(stock.items.single.quantity, tomatoes.quantity);
+
+    // Seeing the same accepted donation again must not duplicate it.
+    donations.requestDonation(milk.id, sampleBeneficiaries[0]);
+    await tester.pump();
+    expect(stock.items, hasLength(1));
+  });
 }
