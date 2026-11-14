@@ -248,7 +248,7 @@ Android needs core library desugaring (already enabled in `android/app/build.gra
 ## 7. Known gaps / TODOs
 
 - **Firestore rules are not deployed yet.** `firestore.rules` is the auth-based version with roles and is tested with the emulator (`firestore-tests/`, `npm test`), but deploying it breaks builds that still use `demo-user` and donor screens that accept requests. The rules in the Firebase project are still the open dev rules.
-- **Roles are new**: restaurants and admins only have a placeholder donation tab; the donation workflow for them (request, accept) is not built.
+- **Roles are new**: restaurants can browse and request donations (`RestaurantDonationsTab`); the admin tab is still a placeholder and accepting requests is not built.
 - **Placeholder content** on Home and Profile: "12 meals protected", the "Fridge: 7 items" / "Recipes: 3 ideas" cards, "128 meals saved", "92% impact", "18 saved recipes". The Recipes feature does not exist yet.
 - **Navigation is duplicated** in each tab screen's `NavigationBar`. Home *pushes* tab screens, so the back stack grows. A single shell with an `IndexedStack` would fix both.
 - **Colours are hard-coded** in every widget instead of read from the theme, so restyling or adding dark mode means editing many files.

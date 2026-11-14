@@ -330,17 +330,33 @@ class DonationRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _loadRemote() async {
+  /// Loads the donations again, so donations published or answered by other
+  /// accounts since sign-in show up (restaurants only see them this way).
+  Future<void> refresh() async {
+    if (remote != null) {
+      await _loadRemote(replace: true);
+    }
+  }
+
+  Future<void> _loadRemote({bool replace = false}) async {
     try {
       final maps = await remote!.loadAll();
-      for (final map in maps) {
-        if (donationById(map['id'] as String) == null) {
-          _donations.add(
-            donationFromMap(
-              map,
-              (name) => fridge.categoryNamed(name) ?? otherFoodCategory,
-            ),
-          );
+      final loaded = [
+        for (final map in maps)
+          donationFromMap(
+            map,
+            (name) => fridge.categoryNamed(name) ?? otherFoodCategory,
+          ),
+      ];
+      if (replace) {
+        _donations
+          ..clear()
+          ..addAll(loaded);
+      } else {
+        for (final donation in loaded) {
+          if (donationById(donation.id) == null) {
+            _donations.add(donation);
+          }
         }
       }
       notifyListeners();

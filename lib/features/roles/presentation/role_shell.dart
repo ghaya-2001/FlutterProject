@@ -18,8 +18,11 @@ class RoleShell extends StatefulWidget {
     required this.emptyMessage,
     this.profiles,
     this.auth,
+    this.tab,
   });
 
+  /// Content of the first tab; a placeholder when null.
+  final Widget? tab;
   final String tabLabel;
   final IconData tabIcon;
   final String title;
@@ -41,24 +44,31 @@ class _RoleShellState extends State<RoleShell> {
         child: IndexedStack(
           index: _index,
           children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1B1B1B),
-                    ),
+            widget.tab ??
+                SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 18,
                   ),
-                  const SizedBox(height: 22),
-                  EmptyCard(icon: widget.tabIcon, message: widget.emptyMessage),
-                ],
-              ),
-            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1B1B1B),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      EmptyCard(
+                        icon: widget.tabIcon,
+                        message: widget.emptyMessage,
+                      ),
+                    ],
+                  ),
+                ),
             RoleProfileTab(profiles: widget.profiles, auth: widget.auth),
           ],
         ),
