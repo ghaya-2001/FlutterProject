@@ -100,6 +100,26 @@ class DonationRepository extends ChangeNotifier {
     return result;
   }
 
+  /// Every request on every donation, newest request first. With
+  /// [beneficiaryId] only the requests sent by that account (a restaurant's
+  /// own history); [includePending] false keeps the answered ones (the
+  /// admin's history).
+  List<RequestRecord> requestRecords({
+    String? beneficiaryId,
+    bool includePending = true,
+  }) {
+    final result = <RequestRecord>[
+      for (final donation in _donations)
+        for (final request in donation.requests)
+          if ((beneficiaryId == null ||
+                  request.beneficiary.id == beneficiaryId) &&
+              (includePending || request.status != RequestStatus.pending))
+            RequestRecord(donation: donation, request: request),
+    ];
+    result.sort((a, b) => b.request.createdAt.compareTo(a.request.createdAt));
+    return result;
+  }
+
   int get collectedCount => donations
       .where((donation) => donation.status == DonationStatus.collected)
       .length;

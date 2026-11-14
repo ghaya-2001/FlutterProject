@@ -89,7 +89,7 @@ void main() {
     expect(fridge.items, isNotEmpty);
   });
 
-  test('restaurants and admins do not load the fridge or the lists', () async {
+  test('restaurants get an empty stock and no lists', () async {
     await signUp('r@example.com', role: UserRole.restaurant);
     expect(fridge.items, isEmpty);
     expect(shopping.lists, isEmpty);

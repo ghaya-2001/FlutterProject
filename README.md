@@ -26,7 +26,7 @@ Code: `lib/features/auth/`, `lib/features/profile/`, `lib/features/roles/`, `lib
 | `auth/data/` | `AuthRepository` (ChangeNotifier; in-memory accounts without Firebase), `AuthFirebase` (the only file importing `firebase_auth`), `SessionBinder` |
 | `auth/presentation/` | `SplashScreen`, `LoginScreen`, `RegisterScreen`, `ResetPasswordScreen`, shared form widgets, logout helpers |
 | `profile/` | `UserProfile`, `UserSettings`, `UserRole`, `UserProfileRepository` + `UserProfileFirestore`, `ProfileScreen`, `EditProfileScreen`, `SettingsScreen` |
-| `roles/presentation/` | `RoleHome` (start screen by role), `RoleShell` (restaurants and admins) |
+| `roles/presentation/` | `RoleHome` (start screen by role), `RoleShell` (restaurants and admins), `RequestHistoryTab` (request history) |
 | `core/session/` | `CurrentUser.uid`, the signed-in uid read by every Firestore class |
 
 | Feature (cahier des charges) | Where |

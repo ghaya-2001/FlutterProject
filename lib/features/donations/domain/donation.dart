@@ -34,6 +34,15 @@ class DonationRequest {
   }
 }
 
+/// One request together with the donation it was sent for: a line of the
+/// request history of a restaurant or of the admin.
+class RequestRecord {
+  const RequestRecord({required this.donation, required this.request});
+
+  final Donation donation;
+  final DonationRequest request;
+}
+
 /// A food offered for donation.
 ///
 /// The name, category and unit are copied from the fridge when the donation
@@ -154,5 +163,39 @@ String requestStatusLabel(RequestStatus status) {
       return 'Accepted';
     case RequestStatus.refused:
       return 'Refused';
+  }
+}
+
+/// Short label of a request in a history list.
+String requestHistoryLabel(RequestStatus status) {
+  switch (status) {
+    case RequestStatus.pending:
+      return 'Pending';
+    case RequestStatus.accepted:
+      return 'Accepted';
+    case RequestStatus.refused:
+      return 'Refused';
+  }
+}
+
+Color requestStatusColor(RequestStatus status) {
+  switch (status) {
+    case RequestStatus.pending:
+      return const Color(0xFFE65100);
+    case RequestStatus.accepted:
+      return const Color(0xFF2E7D32);
+    case RequestStatus.refused:
+      return const Color(0xFFC62828);
+  }
+}
+
+Color requestStatusBackground(RequestStatus status) {
+  switch (status) {
+    case RequestStatus.pending:
+      return const Color(0xFFFFF3E0);
+    case RequestStatus.accepted:
+      return const Color(0xFFE8F5E9);
+    case RequestStatus.refused:
+      return const Color(0xFFFFEBEE);
   }
 }
