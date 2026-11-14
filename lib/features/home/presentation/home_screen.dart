@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../auth/data/auth_repository.dart';
 import '../../chatbot/presentation/chatbot_screen.dart';
 import '../../donations/data/donation_repository.dart';
 import '../../donations/presentation/donations_screen.dart';
@@ -12,10 +13,15 @@ import '../../fridge/presentation/fridge_screen.dart';
 import '../../list/presentation/list_screen.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../notifications/presentation/notifications_screen.dart';
+import '../../profile/data/user_profile_repository.dart';
 import '../../profile/presentation/profile_screen.dart';
 
 class FoodSaverHomePage extends StatefulWidget {
-  const FoodSaverHomePage({super.key});
+  const FoodSaverHomePage({super.key, this.profiles, this.auth});
+
+  /// Default to the app-wide instances; injectable for tests.
+  final UserProfileRepository? profiles;
+  final AuthRepository? auth;
 
   @override
   State<FoodSaverHomePage> createState() => _FoodSaverHomePageState();
@@ -23,6 +29,18 @@ class FoodSaverHomePage extends StatefulWidget {
 
 class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
   int _selectedIndex = 0;
+
+  UserProfileRepository get _profiles =>
+      widget.profiles ?? UserProfileRepository.instance;
+  AuthRepository get _auth => widget.auth ?? AuthRepository.instance;
+
+  /// Name of the signed-in user: profile first, then the auth account.
+  String get _greetingName {
+    final profileName = _profiles.profile?.displayName.trim() ?? '';
+    if (profileName.isNotEmpty) return profileName;
+    final authName = _auth.currentUser?.displayName.trim() ?? '';
+    return authName.isNotEmpty ? authName : 'Food saver';
+  }
 
   void _open(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (context) => screen));
@@ -41,23 +59,34 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Good morning,',
-                          style: TextStyle(color: Colors.black54, fontSize: 16),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Maya',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1B1B1B),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Good morning,',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 16,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          ListenableBuilder(
+                            listenable: Listenable.merge([_profiles, _auth]),
+                            builder: (context, _) => Text(
+                              _greetingName,
+                              key: const ValueKey('home-greeting-name'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1B1B1B),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     InkWell(
                       key: const ValueKey('home-notifications-button'),
