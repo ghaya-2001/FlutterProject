@@ -16,7 +16,20 @@ import 'recipes_screen.dart';
 import 'widgets/name_input_dialog.dart';
 
 class FridgeScreen extends StatefulWidget {
-  const FridgeScreen({super.key, this.repository, this.shoppingRepository});
+  const FridgeScreen({
+    super.key,
+    this.repository,
+    this.shoppingRepository,
+    this.embedded = false,
+    this.canDonate = true,
+  });
+
+  /// True inside the restaurant shell: no back button and no bottom bar (the
+  /// shell has its own), and the title is "Stock".
+  final bool embedded;
+
+  /// False for restaurants: only users publish donations.
+  final bool canDonate;
 
   /// Defaults to [FridgeRepository.instance]; injectable for tests.
   final FridgeRepository? repository;
@@ -65,8 +78,11 @@ class _FridgeScreenState extends State<FridgeScreen> {
   Future<void> _openDetails(FoodItem item) async {
     final message = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (context) =>
-            FoodDetailsScreen(repository: _repository, foodId: item.id),
+        builder: (context) => FoodDetailsScreen(
+          repository: _repository,
+          foodId: item.id,
+          canDonate: widget.canDonate,
+        ),
       ),
     );
     if (message != null && mounted) {
@@ -176,16 +192,18 @@ class _FridgeScreenState extends State<FridgeScreen> {
             children: [
               Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    color: const Color(0xFF1B1B1B),
-                  ),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  if (!widget.embedded) ...[
+                    IconButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      color: const Color(0xFF1B1B1B),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
                     child: Text(
-                      'My fridge',
-                      style: TextStyle(
+                      widget.embedded ? 'My stock' : 'My fridge',
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1B1B1B),
@@ -217,49 +235,56 @@ class _FridgeScreenState extends State<FridgeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+      bottomNavigationBar: widget.embedded
+          ? null
+          : NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
 
-          if (index == 0) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => const FoodSaverHomePage(),
-              ),
-            );
-          }
+                if (index == 0) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const FoodSaverHomePage(),
+                    ),
+                  );
+                }
 
-          if (index == 2) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const ListScreen()),
-            );
-          }
+                if (index == 2) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const ListScreen()),
+                  );
+                }
 
-          if (index == 3) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
-            );
-          }
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(
-            icon: Icon(Icons.kitchen_outlined),
-            label: 'Fridge',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.list_alt_outlined),
-            label: 'List',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-      ),
+                if (index == 3) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(),
+                    ),
+                  );
+                }
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  label: 'Home',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.kitchen_outlined),
+                  label: 'Fridge',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.list_alt_outlined),
+                  label: 'List',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline),
+                  label: 'Profile',
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Add food',
         onPressed: _openAddFood,

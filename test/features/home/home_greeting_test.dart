@@ -57,4 +57,24 @@ void main() {
 
     expect(tester.widget<Text>(greeting()).data, 'Food saver');
   });
+
+  testWidgets('the Fridge and Recipes quick actions open their screens', (
+    tester,
+  ) async {
+    await tester.pumpWidget(home());
+    final fridge = find.byKey(const ValueKey('home-fridge-action'));
+    final recipes = find.byKey(const ValueKey('home-recipes-action'));
+    await tester.ensureVisible(fridge);
+
+    await tester.tap(fridge);
+    await tester.pumpAndSettle();
+    expect(find.text('My fridge'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(recipes);
+    await tester.tap(recipes);
+    await tester.pumpAndSettle();
+    expect(find.text('Cook now'), findsOneWidget);
+  });
 }

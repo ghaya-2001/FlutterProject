@@ -17,7 +17,12 @@ class FoodDetailsScreen extends StatelessWidget {
     required this.repository,
     required this.foodId,
     this.donationRepository,
+    this.canDonate = true,
   });
+
+  /// False for restaurants (their stock cannot be donated): the Donate button
+  /// is hidden.
+  final bool canDonate;
 
   final FridgeRepository repository;
   final String foodId;
@@ -412,28 +417,29 @@ class FoodDetailsScreen extends StatelessWidget {
         ],
       ),
       if (!item.isExpired(now)) ...[
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: OutlinedButton.icon(
-            key: const ValueKey('donate-food-button'),
-            onPressed: () => _donate(context, item),
-            icon: const Icon(Icons.volunteer_activism_rounded),
-            label: const Text(
-              'Donate',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF2E7D32),
-              backgroundColor: const Color(0xFFE8F5E9),
-              side: BorderSide.none,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+        if (canDonate) const SizedBox(height: 12),
+        if (canDonate)
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: OutlinedButton.icon(
+              key: const ValueKey('donate-food-button'),
+              onPressed: () => _donate(context, item),
+              icon: const Icon(Icons.volunteer_activism_rounded),
+              label: const Text(
+                'Donate',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF2E7D32),
+                backgroundColor: const Color(0xFFE8F5E9),
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
               ),
             ),
           ),
-        ),
       ] else ...[
         const SizedBox(height: 12),
         SizedBox(

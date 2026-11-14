@@ -111,12 +111,16 @@ void main() {
       RequestStatus.refused,
     );
     expect(repository.availableDonations, isEmpty);
+    // Reserved already counts as accepted, even before the pick-up.
+    expect(repository.acceptedCount, 1);
+    expect(repository.collectedCount, 0);
 
     repository.markCollected(donation.id);
     updated = repository.donationById(donation.id)!;
     expect(updated.status, DonationStatus.collected);
     expect(updated.collectedAt, today);
     expect(repository.collectedCount, 1);
+    expect(repository.acceptedCount, 1);
   });
 
   test('refusing a request keeps the donation available', () {
@@ -130,6 +134,21 @@ void main() {
     final updated = repository.donationById(donation.id)!;
     expect(updated.status, DonationStatus.available);
     expect(updated.pendingRequests, isEmpty);
+  });
+
+  test('the donor cannot request their own donation', () {
+    final donation = donateTomatoes();
+    final self = Beneficiary(
+      id: repository.userId,
+      name: 'Me',
+      type: BeneficiaryType.restaurant,
+      area: '',
+    );
+    expect(
+      () => repository.requestDonation(donation.id, self),
+      throwsStateError,
+    );
+    expect(repository.donationById(donation.id)!.requests, isEmpty);
   });
 
   test('a beneficiary cannot ask twice, nor ask a reserved donation', () {

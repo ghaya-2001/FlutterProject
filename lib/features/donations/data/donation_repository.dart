@@ -100,6 +100,45 @@ class DonationRepository extends ChangeNotifier {
     return result;
   }
 
+  /// Every request on every donation, newest request first. With
+  /// [beneficiaryId] only the requests sent by that account (a restaurant's
+  /// own history); [includePending] false keeps the answered ones (the
+  /// admin's history).
+  List<RequestRecord> requestRecords({
+    String? beneficiaryId,
+    bool includePending = true,
+  }) {
+    final result = <RequestRecord>[
+      for (final donation in _donations)
+        for (final request in donation.requests)
+          if ((beneficiaryId == null ||
+                  request.beneficiary.id == beneficiaryId) &&
+              (includePending || request.status != RequestStatus.pending))
+            RequestRecord(donation: donation, request: request),
+    ];
+    result.sort((a, b) => b.request.createdAt.compareTo(a.request.createdAt));
+    return result;
+  }
+
+  /// Donations whose request from [beneficiaryId] was accepted by the admin,
+  /// newest first: the food a restaurant is going to receive.
+  List<Donation> acceptedFor(String beneficiaryId) => _sorted(
+    _donations.where(
+      (donation) => donation.acceptedRequest?.beneficiary.id == beneficiaryId,
+    ),
+  );
+
+  /// Donations the admin accepted a restaurant for: reserved (waiting for the
+  /// pick-up) or already collected.
+  int get acceptedCount => donations
+      .where((donation) => donation.status != DonationStatus.available)
+      .length;
+
+  /// Donations reserved for a restaurant that did not pick them up yet.
+  int get reservedCount => donations
+      .where((donation) => donation.status == DonationStatus.reserved)
+      .length;
+
   int get collectedCount => donations
       .where((donation) => donation.status == DonationStatus.collected)
       .length;
@@ -259,7 +298,7 @@ class DonationRepository extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
-  // Beneficiary actions (simulated: there are no beneficiary accounts yet)
+  // Beneficiary actions (restaurants only; never the donor)
   // ---------------------------------------------------------------------------
 
   DonationRequest requestDonation(
@@ -270,6 +309,9 @@ class DonationRepository extends ChangeNotifier {
     final donation = _require(donationId);
     if (donation.status != DonationStatus.available) {
       throw StateError('This donation is no longer available');
+    }
+    if (beneficiary.id == donation.donorId) {
+      throw StateError('You cannot request your own donation');
     }
     if (hasPendingRequestFrom(donation, beneficiary)) {
       throw StateError('${beneficiary.name} already asked for this donation');
