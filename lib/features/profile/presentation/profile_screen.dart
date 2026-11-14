@@ -196,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.volunteer_activism_rounded,
             title: 'My donations',
             subtitle:
-                '${DonationRepository.instance.collectedCount} collected · history',
+                '${DonationRepository.instance.acceptedCount} accepted · history',
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(

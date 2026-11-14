@@ -240,7 +240,7 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
                             title: 'Donations',
                             subtitle: requests == 0
                                 ? 'Share your food'
-                                : '$requests new '
+                                : '$requests pending '
                                       '${requests == 1 ? 'request' : 'requests'}',
                             icon: Icons.volunteer_activism_rounded,
                             color: const Color(0xFFC8E6C9),

@@ -111,12 +111,16 @@ void main() {
       RequestStatus.refused,
     );
     expect(repository.availableDonations, isEmpty);
+    // Reserved already counts as accepted, even before the pick-up.
+    expect(repository.acceptedCount, 1);
+    expect(repository.collectedCount, 0);
 
     repository.markCollected(donation.id);
     updated = repository.donationById(donation.id)!;
     expect(updated.status, DonationStatus.collected);
     expect(updated.collectedAt, today);
     expect(repository.collectedCount, 1);
+    expect(repository.acceptedCount, 1);
   });
 
   test('refusing a request keeps the donation available', () {

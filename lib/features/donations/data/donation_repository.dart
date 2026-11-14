@@ -128,6 +128,17 @@ class DonationRepository extends ChangeNotifier {
     ),
   );
 
+  /// Donations the admin accepted a restaurant for: reserved (waiting for the
+  /// pick-up) or already collected.
+  int get acceptedCount => donations
+      .where((donation) => donation.status != DonationStatus.available)
+      .length;
+
+  /// Donations reserved for a restaurant that did not pick them up yet.
+  int get reservedCount => donations
+      .where((donation) => donation.status == DonationStatus.reserved)
+      .length;
+
   int get collectedCount => donations
       .where((donation) => donation.status == DonationStatus.collected)
       .length;

@@ -158,7 +158,7 @@ Color donationStatusBackground(DonationStatus status) {
 String requestStatusLabel(RequestStatus status) {
   switch (status) {
     case RequestStatus.pending:
-      return 'Waiting for your answer';
+      return 'Waiting for the admin';
     case RequestStatus.accepted:
       return 'Accepted';
     case RequestStatus.refused:

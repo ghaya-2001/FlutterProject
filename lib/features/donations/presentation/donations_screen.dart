@@ -156,7 +156,8 @@ class _SummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${repository.collectedCount} donations collected',
+                  '${repository.acceptedCount} '
+                  '${repository.acceptedCount == 1 ? 'donation' : 'donations'} accepted',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 21,
@@ -165,10 +166,13 @@ class _SummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  requests == 0
-                      ? 'No request waiting for your answer.'
-                      : '$requests ${requests == 1 ? 'request' : 'requests'} '
-                            'waiting for your answer.',
+                  requests > 0
+                      ? '$requests ${requests == 1 ? 'request' : 'requests'} '
+                            'from restaurants waiting for the admin.'
+                      : repository.reservedCount > 0
+                      ? '${repository.reservedCount} reserved, waiting to be '
+                            'collected.'
+                      : 'No request from restaurants yet.',
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
