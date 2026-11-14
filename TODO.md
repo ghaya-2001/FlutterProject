@@ -40,7 +40,7 @@ After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 - [x] **Login**
   - [x] Form validation (email format, password not empty)
   - [x] Real `signIn`, loading state, error messages
-  - [x] Fix `Image.asset('')` (now `assets/animations/food_login.gif`)
+  - [x] Fix `Image.asset('')`, then remove the placeholder GIF ("This content is not available"); the logo is the Lottie animation only
   - [x] "Sign up" opens Register, "Forgot password?" opens Reset
 - [x] **Register** (new): name, email, password, confirm password; creates the account and the `users/{uid}` profile
 - [x] **Reset password** (new dedicated screen, opened from Login): `sendPasswordResetEmail` + confirmation message

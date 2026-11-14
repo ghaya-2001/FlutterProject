@@ -67,7 +67,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/animations/food_saver.json
-    - assets/animations/food_login.gif
     - assets/icon/app_icon.png
 
   # To add assets to your application, add an assets section, like this:
