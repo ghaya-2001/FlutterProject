@@ -10,6 +10,7 @@ import '../../fridge/data/fridge_repository.dart';
 import '../../fridge/domain/fridge_formatters.dart';
 import '../../fridge/presentation/food_details_screen.dart';
 import '../../fridge/presentation/fridge_screen.dart';
+import '../../fridge/presentation/recipes_screen.dart';
 import '../../list/presentation/list_screen.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../notifications/presentation/notifications_screen.dart';
@@ -206,26 +207,39 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Row(
-                  children: [
-                    Expanded(
-                      child: _ActionCard(
-                        title: 'Fridge',
-                        subtitle: '7 items',
-                        icon: Icons.kitchen,
-                        color: Color(0xFFB2DFDB),
-                      ),
-                    ),
-                    SizedBox(width: 14),
-                    Expanded(
-                      child: _ActionCard(
-                        title: 'Recipes',
-                        subtitle: '3 ideas',
-                        icon: Icons.restaurant_menu,
-                        color: Color(0xFFFFE082),
-                      ),
-                    ),
-                  ],
+                ListenableBuilder(
+                  listenable: FridgeRepository.instance,
+                  builder: (context, _) {
+                    final fridge = FridgeRepository.instance;
+                    final items = fridge.items.length;
+                    final ideas = fridge.recipeSuggestions.length;
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _ActionCard(
+                            key: const ValueKey('home-fridge-action'),
+                            title: 'Fridge',
+                            subtitle: '$items ${items == 1 ? 'item' : 'items'}',
+                            icon: Icons.kitchen,
+                            color: const Color(0xFFB2DFDB),
+                            onTap: () => _open(const FridgeScreen()),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _ActionCard(
+                            key: const ValueKey('home-recipes-action'),
+                            title: 'Recipes',
+                            subtitle: '$ideas ${ideas == 1 ? 'idea' : 'ideas'}',
+                            icon: Icons.restaurant_menu,
+                            color: const Color(0xFFFFE082),
+                            onTap: () =>
+                                _open(RecipesScreen(repository: fridge)),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -387,6 +401,7 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
 
 class _ActionCard extends StatelessWidget {
   const _ActionCard({
+    super.key,
     required this.title,
     required this.subtitle,
     required this.icon,
