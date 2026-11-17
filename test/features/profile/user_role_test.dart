@@ -320,14 +320,18 @@ void main() {
       await fill(tester, 'register-password-field', 'secret12');
       await fill(tester, 'register-confirm-field', 'secret12');
       final submit = find.byKey(const ValueKey('register-submit-button'));
+      await tester.pumpAndSettle();
       await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
       await tester.tap(submit);
       await tester.pumpAndSettle();
       expect(find.text('Enter the name of your restaurant.'), findsOneWidget);
       expect(auth.isSignedIn, isFalse);
 
       await fill(tester, 'register-business-field', 'Le Jardin');
+      await tester.pumpAndSettle();
       await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
       await tester.tap(submit);
       await tester.pumpAndSettle();
       expect(profiles.role, UserRole.restaurant);
