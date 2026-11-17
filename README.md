@@ -107,6 +107,7 @@ Code: `lib/features/goals/`. A restaurant or a charity publishes what it needs (
 | User | Fridge → food details | "<Charity> needs milk" banner with a Give button when an open goal asks for this food |
 | Admin | Goals tab | Every goal of every restaurant |
 
+- Stored in `users/shared/donation_goals` (shared by every account), not at the top level: the rules deployed on the Firebase project only open `users/...` and `donations/...`.
 - The progress is never stored: it is the sum of the contributions, which are appended with `arrayUnion`, so two donors giving at the same moment both count. The goal is reached when the sum reaches the target; it can no longer receive gifts once reached, closed or past its deadline.
 - Tests: `test/features/goals/` (rules, conversions, fridge link, screens for users, restaurants and the admin).
 
@@ -233,7 +234,7 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 | `users/{userId}/saved_recipes/{recipeId}` | favorite recipes: `savedAt` (the recipe itself comes from the app) | `lib/features/recipes/data/saved_recipes_firestore.dart` |
 | `users/{userId}/health/profile` | health goal: `goal`, `updatedAt` | `lib/features/recipes/data/health_profile_firestore.dart` |
 | `donations/{donationId}` | `donorId`, `foodName`, `category`, `quantity`, `unit`, `expiryDate`, `status`, `requests: [...]` | `lib/features/donations/data/donation_firestore.dart` |
-| `donation_goals/{goalId}` | `restaurantId`, `restaurantName`, `title`, `foodName`, `category`, `target`, `unit`, `description`, `deadline`, `createdAt`, `closed`, `contributions: [{id, donorId, donorName, quantity, createdAt, fromFridge}]` (listened to in real time) | `lib/features/goals/data/goal_firestore.dart` |
+| `users/shared/donation_goals/{goalId}` | `restaurantId`, `restaurantName`, `title`, `foodName`, `category`, `target`, `unit`, `description`, `deadline`, `createdAt`, `closed`, `contributions: [{id, donorId, donorName, quantity, createdAt, fromFridge}]` (listened to in real time) | `lib/features/goals/data/goal_firestore.dart` |
 
 - Every module reads and writes under the signed-in uid (`CurrentUser.uid`, `lib/core/session/current_user.dart`). `SessionBinder` empties and reloads the repositories when the account changes. Without Firebase (tests) the fixed `demo-user` is used.
 - Roles (beyond the original split): a normal **user** donates food and uses the fridge, a **restaurant** requests donations and publishes donation goals, an **admin** accepts or refuses requests. The role is chosen at sign-up (user or restaurant, never admin), cannot be changed afterwards, and admin is set by hand in the Firebase console.

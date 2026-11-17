@@ -334,7 +334,7 @@ Future<void> _publishGoals(
   ];
 
   for (final goal in goals) {
-    final path = 'donation_goals/${goal.id}';
+    final path = 'users/shared/donation_goals/${goal.id}';
     // Start again from zero (ignored when the goal does not exist yet).
     await _commit(goal.owner.token, [
       {'delete': '$_root/$path'},

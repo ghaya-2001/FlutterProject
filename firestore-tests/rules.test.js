@@ -50,7 +50,7 @@ beforeEach(async () => {
     await setDoc(doc(db, 'users/legacy1'), { fridgeSeeded: true });
     await setDoc(doc(db, 'users/rest1'), { role: 'restaurant' });
     await setDoc(doc(db, 'users/admin1'), { role: 'admin' });
-    await setDoc(doc(db, 'donation_goals/goal1'), {
+    await setDoc(doc(db, 'users/shared/donation_goals/goal1'), {
       restaurantId: 'rest1',
       restaurantName: 'Le Jardin',
       foodName: 'Rice',
@@ -283,7 +283,7 @@ describe('donations/{id}', () => {
   });
 });
 
-describe('donation goals donation_goals/{goalId}', () => {
+describe('donation goals users/shared/donation_goals/{goalId}', () => {
   const goal = (restaurantId, extra = {}) => ({
     restaurantId,
     restaurantName: 'Le Jardin',
@@ -296,39 +296,39 @@ describe('donation goals donation_goals/{goalId}', () => {
   });
 
   it('lets signed-in accounts read goals, not anonymous visitors', async () => {
-    await assertSucceeds(getDoc(doc(as('donor1'), 'donation_goals/goal1')));
-    await assertSucceeds(getDoc(doc(as('rest1'), 'donation_goals/goal1')));
-    await assertFails(getDoc(doc(anon(), 'donation_goals/goal1')));
+    await assertSucceeds(getDoc(doc(as('donor1'), 'users/shared/donation_goals/goal1')));
+    await assertSucceeds(getDoc(doc(as('rest1'), 'users/shared/donation_goals/goal1')));
+    await assertFails(getDoc(doc(anon(), 'users/shared/donation_goals/goal1')));
   });
 
   it('lets a restaurant publish a goal in its own name only', async () => {
-    await assertSucceeds(setDoc(doc(as('rest1'), 'donation_goals/g2'), goal('rest1')));
-    await assertFails(setDoc(doc(as('rest1'), 'donation_goals/g3'), goal('rest2')));
+    await assertSucceeds(setDoc(doc(as('rest1'), 'users/shared/donation_goals/g2'), goal('rest1')));
+    await assertFails(setDoc(doc(as('rest1'), 'users/shared/donation_goals/g3'), goal('rest2')));
   });
 
   it('refuses users publishing, fake progress and empty targets', async () => {
-    await assertFails(setDoc(doc(as('donor1'), 'donation_goals/g2'), goal('donor1')));
+    await assertFails(setDoc(doc(as('donor1'), 'users/shared/donation_goals/g2'), goal('donor1')));
     await assertFails(
       setDoc(
-        doc(as('rest1'), 'donation_goals/g2'),
+        doc(as('rest1'), 'users/shared/donation_goals/g2'),
         goal('rest1', { contributions: [gift('x', 'rest1', 12)] }),
       ),
     );
     await assertFails(
-      setDoc(doc(as('rest1'), 'donation_goals/g2'), goal('rest1', { target: 0 })),
+      setDoc(doc(as('rest1'), 'users/shared/donation_goals/g2'), goal('rest1', { target: 0 })),
     );
   });
 
   it('lets a user add one gift in their own name', async () => {
     await assertSucceeds(
-      updateDoc(doc(as('donor1'), 'donation_goals/goal1'), {
+      updateDoc(doc(as('donor1'), 'users/shared/donation_goals/goal1'), {
         contributions: arrayUnion(gift('g1', 'donor1', 1.5)),
       }),
     );
   });
 
   it('refuses a gift in the name of another user, or with no quantity', async () => {
-    const ref = doc(as('donor1'), 'donation_goals/goal1');
+    const ref = doc(as('donor1'), 'users/shared/donation_goals/goal1');
     await assertFails(
       updateDoc(ref, { contributions: arrayUnion(gift('g1', 'other1', 1)) }),
     );
@@ -338,7 +338,7 @@ describe('donation goals donation_goals/{goalId}', () => {
   });
 
   it('refuses removing or rewriting previous gifts', async () => {
-    const ref = doc(as('donor1'), 'donation_goals/goal1');
+    const ref = doc(as('donor1'), 'users/shared/donation_goals/goal1');
     await assertFails(updateDoc(ref, { contributions: [] }));
     await assertFails(
       updateDoc(ref, {
@@ -348,9 +348,9 @@ describe('donation goals donation_goals/{goalId}', () => {
   });
 
   it('refuses users changing the target, and restaurants giving', async () => {
-    await assertFails(updateDoc(doc(as('donor1'), 'donation_goals/goal1'), { target: 1 }));
+    await assertFails(updateDoc(doc(as('donor1'), 'users/shared/donation_goals/goal1'), { target: 1 }));
     await assertFails(
-      updateDoc(doc(as('rest1'), 'donation_goals/goal1'), {
+      updateDoc(doc(as('rest1'), 'users/shared/donation_goals/goal1'), {
         contributions: arrayUnion(gift('g1', 'rest1', 1)),
       }),
     );
@@ -358,10 +358,10 @@ describe('donation goals donation_goals/{goalId}', () => {
 
   it('refuses gifts to a closed goal', async () => {
     await assertSucceeds(
-      updateDoc(doc(as('rest1'), 'donation_goals/goal1'), { closed: true }),
+      updateDoc(doc(as('rest1'), 'users/shared/donation_goals/goal1'), { closed: true }),
     );
     await assertFails(
-      updateDoc(doc(as('donor1'), 'donation_goals/goal1'), {
+      updateDoc(doc(as('donor1'), 'users/shared/donation_goals/goal1'), {
         contributions: arrayUnion(gift('g1', 'donor1', 1)),
       }),
     );
@@ -369,18 +369,18 @@ describe('donation goals donation_goals/{goalId}', () => {
 
   it('lets only the owner close it (or the admin)', async () => {
     await assertFails(
-      updateDoc(doc(as('other1'), 'donation_goals/goal1'), { closed: true }),
+      updateDoc(doc(as('other1'), 'users/shared/donation_goals/goal1'), { closed: true }),
     );
     await assertSucceeds(
-      updateDoc(doc(as('admin1'), 'donation_goals/goal1'), { closed: true }),
+      updateDoc(doc(as('admin1'), 'users/shared/donation_goals/goal1'), { closed: true }),
     );
   });
 
   it('lets the owner delete a goal only before any gift', async () => {
-    await assertFails(deleteDoc(doc(as('rest1'), 'donation_goals/goal1')));
-    await assertSucceeds(setDoc(doc(as('rest1'), 'donation_goals/g2'), goal('rest1')));
-    await assertFails(deleteDoc(doc(as('donor1'), 'donation_goals/g2')));
-    await assertSucceeds(deleteDoc(doc(as('rest1'), 'donation_goals/g2')));
-    await assertSucceeds(deleteDoc(doc(as('admin1'), 'donation_goals/goal1')));
+    await assertFails(deleteDoc(doc(as('rest1'), 'users/shared/donation_goals/goal1')));
+    await assertSucceeds(setDoc(doc(as('rest1'), 'users/shared/donation_goals/g2'), goal('rest1')));
+    await assertFails(deleteDoc(doc(as('donor1'), 'users/shared/donation_goals/g2')));
+    await assertSucceeds(deleteDoc(doc(as('rest1'), 'users/shared/donation_goals/g2')));
+    await assertSucceeds(deleteDoc(doc(as('admin1'), 'users/shared/donation_goals/goal1')));
   });
 });

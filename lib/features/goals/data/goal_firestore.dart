@@ -3,16 +3,25 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../fridge/domain/food_category.dart';
 import '../domain/donation_goal.dart';
 
+/// Collection holding every donation goal.
+///
+/// Shared by all accounts, but stored under `users/shared/` instead of at the
+/// top level: the rules deployed on the Firebase project (the open
+/// development rules) only allow `users/...` and `donations/...`, so a new
+/// top-level collection would be refused. `shared` is never a uid (Firebase
+/// uids are 28 characters), and no `users/shared` document is created.
+const donationGoalsPath = 'users/shared/donation_goals';
+
 /// Reads and writes donation goals in Firestore.
 ///
 /// Structure:
 /// ```
-/// donation_goals/{goalId}   restaurantId, restaurantName, title, foodName,
-///                           category, target, unit, description, deadline,
-///                           createdAt, closed, contributions: [...]
+/// users/shared/donation_goals/{goalId}
+///     restaurantId, restaurantName, title, foodName, category, target,
+///     unit, description, deadline, createdAt, closed, contributions: [...]
 /// ```
-/// Goals are shared (top-level) because every user must see the goals of
-/// every restaurant. The progress is not stored: it is the sum of the
+/// Goals are shared because every user must see the goals of every
+/// restaurant. The progress is not stored: it is the sum of the
 /// contributions, and a contribution is added with `arrayUnion`, so two
 /// donors giving at the same moment both count.
 class GoalFirestore {
@@ -22,7 +31,7 @@ class GoalFirestore {
   final FirebaseFirestore _db;
 
   CollectionReference<Map<String, dynamic>> get _goals =>
-      _db.collection('donation_goals');
+      _db.collection(donationGoalsPath);
 
   /// Every goal, sent again each time one of them changes (a donor gave on
   /// another phone), so the progress bars move in real time.
