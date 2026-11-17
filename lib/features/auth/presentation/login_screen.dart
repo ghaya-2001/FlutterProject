@@ -107,20 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
                         },
                       ),
-                      const SizedBox(height: 8),
-                      Image.asset(
-                        'assets/animations/food_login.gif',
-                        width: 110,
-                        height: 110,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.fastfood_rounded,
-                            size: 80,
-                            color: Color(0xFF2E7D32),
-                          );
-                        },
-                      ),
                     ],
                   ),
                 ),

@@ -9,7 +9,7 @@ import '../settings_screen.dart';
 import 'profile_avatar.dart';
 
 /// Profile tab of restaurants and admins: who they are, Edit profile,
-/// Settings and logout.
+/// Settings and the same Logout button as users.
 class RoleProfileTab extends StatelessWidget {
   const RoleProfileTab({super.key, this.profiles, this.auth});
 
@@ -99,11 +99,10 @@ class RoleProfileTab extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 12),
-              _RoleAction(
+              const SizedBox(height: 16),
+              LogoutButton(
                 key: const ValueKey('role-profile-logout'),
-                icon: Icons.logout_rounded,
-                title: 'Logout',
-                onTap: () => confirmAndSignOut(context, auth: auth),
+                auth: auth,
               ),
             ],
           ),

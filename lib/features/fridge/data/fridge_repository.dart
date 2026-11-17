@@ -508,11 +508,15 @@ class FridgeRepository extends ChangeNotifier {
     );
   }
 
-  /// Loads the signed-in user's fridge (after [clear]).
-  void connect() {
+  /// Loads the signed-in account's fridge (after [clear]).
+  ///
+  /// [seedDemo] false keeps a new account's fridge empty (restaurants start
+  /// with an empty stock instead of the household demo foods).
+  void connect({bool seedDemo = true}) {
+    final seed = _seed_ && seedDemo;
     if (remote != null) {
-      _connectRemote(seedNewUser: _seed_);
-    } else if (_seed_) {
+      _connectRemote(seedNewUser: seed);
+    } else if (seed) {
       _seed();
       notifyListeners();
     }

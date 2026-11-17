@@ -67,8 +67,8 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _CountCard(
-                        value: '${_repository.collectedCount}',
-                        label: 'Collected',
+                        value: '${_repository.acceptedCount}',
+                        label: 'Accepted',
                         color: const Color(0xFFBBDEFB),
                       ),
                     ),

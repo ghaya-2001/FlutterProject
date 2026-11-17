@@ -20,17 +20,6 @@ class DonationDetailsScreen extends StatelessWidget {
   final DonationRepository repository;
   final String donationId;
 
-  Future<void> _simulateRequest(BuildContext context, Donation donation) async {
-    final name = await showRequestDonationSheet(
-      context,
-      repository: repository,
-      donation: donation,
-    );
-    if (name != null && context.mounted) {
-      showAppSnackBar(context, 'Request sent by $name');
-    }
-  }
-
   void _accept(BuildContext context, Donation donation, DonationRequest r) {
     repository.acceptRequest(donation.id, r.id);
     showAppSnackBar(
@@ -221,24 +210,13 @@ class DonationDetailsScreen extends StatelessWidget {
         ),
       ],
       if (isAvailable) ...[
-        SectionTitle(
-          'Requests',
-          trailing: TextButton.icon(
-            key: const ValueKey('simulate-request-button'),
-            onPressed: () => _simulateRequest(context, donation),
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Simulate'),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF2E7D32),
-            ),
-          ),
-        ),
+        const SectionTitle('Requests'),
         if (donation.pendingRequests.isEmpty)
           const EmptyCard(
             icon: Icons.hourglass_empty_rounded,
             message:
-                'No request yet. Restaurants and charities can see your '
-                'donation in "Available".',
+                'No request yet. Partner restaurants can see your donation '
+                'and ask for it.',
           )
         else
           for (final request in donation.pendingRequests)

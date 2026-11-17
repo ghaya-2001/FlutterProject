@@ -19,8 +19,8 @@ import 'auth_repository.dart';
 /// it points [CurrentUser] at the new uid, empties every repository so the
 /// next account never sees the previous one's data, then loads the new
 /// account's data. Fridge, lists, notifications, saved recipes and the
-/// health goal are only loaded for normal users; restaurants and admins only
-/// need donations.
+/// health goal are only loaded for normal users; restaurants also get their
+/// own (empty at first) fridge as their stock, and admins only need donations.
 class SessionBinder {
   SessionBinder({
     AuthRepository? auth,
@@ -79,12 +79,17 @@ class SessionBinder {
       return; // someone else signed in meanwhile
     }
     try {
-      if (_profiles.role == UserRole.user) {
-        _fridge.connect();
-        _shopping.connect();
-        _notifications.connect();
-        _savedRecipes.connect();
-        _healthProfile.connect();
+      switch (_profiles.role) {
+        case UserRole.user:
+          _fridge.connect();
+          _shopping.connect();
+          _notifications.connect();
+          _savedRecipes.connect();
+          _healthProfile.connect();
+        case UserRole.restaurant:
+          _fridge.connect(seedDemo: false);
+        case UserRole.admin:
+          break;
       }
       _donations.connect();
     } catch (error) {

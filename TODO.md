@@ -43,7 +43,7 @@ After the Membre 5 healthy-lifestyle bonus (2026-11-16): analyze clean · **277 
 - [x] **Login**
   - [x] Form validation (email format, password not empty)
   - [x] Real `signIn`, loading state, error messages
-  - [x] Fix `Image.asset('')` (now `assets/animations/food_login.gif`)
+  - [x] Fix `Image.asset('')`, then remove the placeholder GIF ("This content is not available"); the logo is the Lottie animation only
   - [x] "Sign up" opens Register, "Forgot password?" opens Reset
 - [x] **Register** (new): name, email, password, confirm password; creates the account and the `users/{uid}` profile
 - [x] **Reset password** (new dedicated screen, opened from Login): `sendPasswordResetEmail` + confirmation message
@@ -74,7 +74,7 @@ After the Membre 5 healthy-lifestyle bonus (2026-11-16): analyze clean · **277 
 - [x] Edit profile for restaurants: change the business name (`UserProfileRepository.updateBusinessName`, field shown to restaurants only)
 - [x] `NotificationService`: cancel/re-schedule hook (`setEnabled`, `cancelAll`; Membre 3: please review) for the Settings toggle, logout and delete account (Membre 3 owns it; add a method only if missing)
 - [x] Profile stats ("128 meals saved / 92%") replaced by real values (done by Membre 5)
-- [x] Home header greeting uses the profile name (done by Membre 5)
+- [x] Home header greeting uses the profile name, falling back to the auth name (greeting fixed by Membre 1 on 2026-11-14, Home dashboard by Membre 5). Tests: `test/features/home/home_greeting_test.dart`, `test/features/home/home_screen_test.dart`
 
 ### Phase 3 — Tests & docs
 - [x] `test/features/auth/`: auth repository with a fake remote, error mapping, form validation (done in Phase 0)
@@ -87,8 +87,12 @@ After the Membre 5 healthy-lifestyle bonus (2026-11-16): analyze clean · **277 
 ## Donations workflow with roles — handoff spec (not assigned)
 Roles exist (see Phase 2 above); the donation screens still follow the old flow where the donor accepts requests on their own donation, and restaurants are `sampleBeneficiaries`. Target flow, agreed 2026-11-13:
 - [ ] A user creates a donation; it appears as available to every restaurant
-- [ ] Restaurants browse available donations and send a request (optional message) from the **Donations** tab of `RoleShell`; the beneficiary is the restaurant account (`businessName`), replacing `sampleBeneficiaries`
-- [ ] The admin sees all pending requests in the **Requests** tab and accepts or refuses; accepting one reserves the donation and refuses the other requests on it
+- [x] Restaurants browse available donations and send a request (optional message) from the **Donations** tab of `RoleShell` (`RestaurantDonationsTab`, `DonationRepository.refresh()`); the beneficiary is the restaurant account (`businessName`). Test: `restaurant_donations_tab_test.dart`
+- [x] Restaurants have a **Stock** tab (their own fridge, no demo data, no Donate button) and a **History** tab of their requests; the admin has a **History** tab of answered requests (`RequestHistoryTab`, `DonationRepository.requestRecords`). Restaurant and admin Profile use the same green Logout button as users (`LogoutButton`). An accepted request is added to the restaurant's stock once (`DonationStockReceiver`). Test: `request_history_tab_test.dart`
+- [x] Users can no longer request donations: removed the "Available" tab, its Request button and the "Simulate" button in donation details; `requestDonation` throws when the requester is the donor. Tests: `donation_screens_test.dart`, `donation_repository_test.dart`
+- [x] Donor wording fixed: the Donations summary counts accepted (reserved or collected) donations and says requests wait for the admin, not for the donor (`acceptedCount`, `reservedCount`)
+- [x] Home quick actions Fridge and Recipes were static placeholders: they now open `FridgeScreen` / `RecipesScreen` and show live counts (`home_greeting_test.dart`)
+- [x] The admin sees all pending requests in the **Requests** tab and accepts or refuses; accepting one reserves the donation and refuses the other requests on it
 - [ ] The donor sees the status and gets a notification (rules already allow restaurant/admin to create an event in the donor notifications), then marks the donation collected after the handover (the admin can as a fallback)
 - [ ] Remove the donor-side accept/refuse buttons (the new rules forbid them)
 - [ ] Manual donations without a fridge item ("Donate something else": name, category, quantity, optional expiry; food and pantry items only)

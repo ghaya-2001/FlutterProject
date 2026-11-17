@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foodsaver/features/donations/data/donation_repository.dart';
+import 'package:foodsaver/features/donations/domain/beneficiary.dart';
 import 'package:foodsaver/features/donations/domain/donation.dart';
 import 'package:foodsaver/features/donations/presentation/donations_screen.dart';
 import 'package:foodsaver/features/expiry/presentation/expiring_soon_screen.dart';
@@ -30,6 +31,9 @@ void main() {
     await pump(tester, DonationsScreen(repository: repository));
 
     expect(find.text('Could be donated'), findsOneWidget);
+    // Users only offer food: no way to browse or request donations.
+    expect(find.text('Available'), findsNothing);
+    expect(find.text('Request'), findsNothing);
     expect(find.text('You have no active donation.'), findsOneWidget);
 
     final spinachId = fridge.items.firstWhere((i) => i.name == 'Spinach').id;
@@ -45,18 +49,12 @@ void main() {
     // The whole pack was donated, so it left the fridge.
     expect(fridge.items.any((i) => i.name == 'Spinach'), isFalse);
 
-    // Beneficiary view: simulate a request.
-    // "Available" is both the tab label and the status chip: tap the tab.
-    await tester.tap(find.text('Available').first);
+    // A partner restaurant asks for it (restaurants request, not users).
+    repository.requestDonation(
+      repository.activeDonations.single.id,
+      sampleBeneficiaries[0],
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Request'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Restos du Cœur'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('send-request-button')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Request sent by Restos du Cœur'), findsOneWidget);
 
     // Donor accepts the request, then marks it as collected.
     await tester.tap(find.textContaining('Spinach ·'));

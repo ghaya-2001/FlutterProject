@@ -36,6 +36,7 @@ class FoodSaverHomePage extends StatefulWidget {
     this.donations,
     this.savedRecipes,
     this.profiles,
+    this.auth,
   });
 
   /// Default to the app-wide instances; injectable for tests.
@@ -43,6 +44,7 @@ class FoodSaverHomePage extends StatefulWidget {
   final DonationRepository? donations;
   final SavedRecipesRepository? savedRecipes;
   final UserProfileRepository? profiles;
+  final AuthRepository? auth;
 
   @override
   State<FoodSaverHomePage> createState() => _FoodSaverHomePageState();
@@ -58,6 +60,7 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
       widget.savedRecipes ?? SavedRecipesRepository.instance;
   UserProfileRepository get _profiles =>
       widget.profiles ?? UserProfileRepository.instance;
+  AuthRepository get _auth => widget.auth ?? AuthRepository.instance;
 
   void _open(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (context) => screen));
@@ -78,7 +81,7 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
   String? get _firstName {
     final name =
         _profiles.profile?.displayName ??
-        AuthRepository.instance.currentUser?.displayName ??
+        _auth.currentUser?.displayName ??
         '';
     final first = name.trim().split(RegExp(r'\s+')).first;
     return first.isEmpty ? null : first;
@@ -94,6 +97,7 @@ class _FoodSaverHomePageState extends State<FoodSaverHomePage> {
             _donations,
             _saved,
             _profiles,
+            _auth,
           ]),
           builder: (context, _) => _buildBody(context),
         ),

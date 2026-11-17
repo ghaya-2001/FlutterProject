@@ -52,3 +52,34 @@ Future<void> confirmAndSignOut(
     await signOutAndShowWelcome(context, auth: auth);
   }
 }
+
+/// The green full-width "Logout" button shared by the Profile screens of
+/// users, restaurants and admins.
+class LogoutButton extends StatelessWidget {
+  const LogoutButton({super.key, this.auth});
+
+  final AuthRepository? auth;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: () => confirmAndSignOut(context, auth: auth),
+        icon: const Icon(Icons.logout_rounded),
+        label: const Text(
+          'Logout',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2E7D32),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -271,7 +271,10 @@ void main() {
       );
       await tester.tap(find.text('Profile'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('role-profile-logout')));
+      final logout = find.byKey(const ValueKey('role-profile-logout'));
+      await tester.ensureVisible(logout);
+      await tester.pumpAndSettle();
+      await tester.tap(logout);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('logout-confirm-button')));
       await tester.pumpAndSettle();
