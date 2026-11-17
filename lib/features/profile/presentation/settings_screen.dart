@@ -7,6 +7,7 @@ import '../../auth/domain/auth_validators.dart';
 import '../../auth/presentation/session_actions.dart';
 import '../../auth/presentation/widgets/auth_widgets.dart';
 import '../data/user_profile_repository.dart';
+import 'change_password_screen.dart';
 
 /// Notifications on/off, change password and delete account.
 class SettingsScreen extends StatelessWidget {
@@ -21,12 +22,13 @@ class SettingsScreen extends StatelessWidget {
       profiles ?? UserProfileRepository.instance;
 
   Future<void> _changePassword(BuildContext context) async {
-    final changed = await showDialog<bool>(
-      context: context,
-      builder: (context) => _ChangePasswordDialog(auth: _auth),
+    final message = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => ChangePasswordScreen(auth: _auth),
+      ),
     );
-    if (changed == true && context.mounted) {
-      showAppSnackBar(context, 'Password changed');
+    if (message != null && context.mounted) {
+      showAppSnackBar(context, message);
     }
   }
 
@@ -132,119 +134,6 @@ class _SettingsCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
       child: child,
-    );
-  }
-}
-
-class _ChangePasswordDialog extends StatefulWidget {
-  const _ChangePasswordDialog({required this.auth});
-
-  final AuthRepository auth;
-
-  @override
-  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
-}
-
-class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _currentController = TextEditingController();
-  final _newController = TextEditingController();
-  final _confirmController = TextEditingController();
-  bool _loading = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _currentController.dispose();
-    _newController.dispose();
-    _confirmController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      await widget.auth.changePassword(
-        currentPassword: _currentController.text,
-        newPassword: _newController.text,
-      );
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    } on AuthFailure catch (failure) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _error = failure.message;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: const Text('Change password'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              KeyedSubtree(
-                key: const ValueKey('change-password-current'),
-                child: PasswordField(
-                  controller: _currentController,
-                  label: 'Current password',
-                  validator: validateLoginPassword,
-                ),
-              ),
-              const SizedBox(height: 14),
-              KeyedSubtree(
-                key: const ValueKey('change-password-new'),
-                child: PasswordField(
-                  controller: _newController,
-                  label: 'New password',
-                  validator: validateNewPassword,
-                ),
-              ),
-              const SizedBox(height: 14),
-              KeyedSubtree(
-                key: const ValueKey('change-password-confirm'),
-                child: PasswordField(
-                  controller: _confirmController,
-                  label: 'Confirm new password',
-                  validator: (value) =>
-                      validatePasswordConfirmation(value, _newController.text),
-                ),
-              ),
-              const SizedBox(height: 14),
-              FormError(_error),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _loading ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
-        ),
-        TextButton(
-          key: const ValueKey('change-password-submit'),
-          onPressed: _loading ? null : _submit,
-          child: const Text(
-            'Change',
-            style: TextStyle(color: Color(0xFF2E7D32)),
-          ),
-        ),
-      ],
     );
   }
 }

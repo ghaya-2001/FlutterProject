@@ -33,13 +33,13 @@ Code: `lib/features/auth/`, `lib/features/profile/`, `lib/features/roles/`, `lib
 | --- | --- |
 | Splash Screen | First screen: waits for Firebase, then opens the app (signed in) or Welcome (signed out) |
 | Welcome Screen | Get Started → Login, Create account → Register |
-| Inscription | Register: name, email, password, confirmation; Individual or Restaurant (with business name). A verification email is sent but never blocks access |
+| Inscription | Register: name, email, password, confirmation, with a live checklist that ticks each password rule; Individual or Restaurant (with business name). A verification email is sent but never blocks access |
 | Connexion | Login: validation, loading state, error messages |
 | Réinitialisation du mot de passe | Login → Forgot password? → Reset password (reset link by email) |
 | Gestion du profil utilisateur | Profile tab: real name, email, photo, verify-email banner |
 | Modification des informations personnelles | Profile → Edit profile: name (and business name for restaurants) |
 | Photo de profil | Edit profile → tap the photo: gallery, camera or remove. Stored as a small base64 JPEG in `users/{uid}.photo` (no Firebase Storage) |
-| Paramètres utilisateur | Profile → Settings: notifications on/off, change password, delete account (all the user data, then the account) |
+| Paramètres utilisateur | Profile → Settings: notifications on/off, change password (current password + new one twice, live checklist of the password rules, reset link if the current one is forgotten), delete account (all the user data, then the account) |
 | Déconnexion sécurisée | Profile → Logout: confirmation, sign out, cancel phone alerts, back to Welcome with no way back |
 
 Beyond the original split:

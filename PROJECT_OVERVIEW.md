@@ -57,7 +57,7 @@ features/<feature>/
 | Feature | Owner | domain | data | presentation |
 | --- | --- | --- | --- | --- |
 | `welcome` | — | — | — | `WelcomeScreen` |
-| `auth` | Membre 1 | `AppUser`, `AuthFailure`, form validators | `AuthRepository`, `AuthFirebase` | `SplashScreen`, `LoginScreen`, `RegisterScreen`, `ResetPasswordScreen` (all use `AuthRepository`) |
+| `auth` | Membre 1 | `AppUser`, `AuthFailure`, form validators, `passwordRules` (shown live by `PasswordChecklist`) | `AuthRepository`, `AuthFirebase` | `SplashScreen`, `LoginScreen`, `RegisterScreen`, `ResetPasswordScreen` (all use `AuthRepository`) |
 | `home` | Membre 5 | — | — | `FoodSaverHomePage` (dashboard with real data + bottom nav) |
 | `fridge` | Membre 2 | `FoodItem`, `FoodCategory`, `FridgeEvent`, `FridgeStats`, formatters | `FridgeRepository`, `FridgeFirestore` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
 | `donations` | Membre 3 | `Donation`, `DonationRequest`, `Beneficiary` | `DonationRepository`, `DonationFirestore` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen` |
@@ -65,7 +65,7 @@ features/<feature>/
 | `expiry` | Membre 4 | `expiry_alerts.dart` (7d / 3d / same-day rules) | — (computed from the fridge) | `ExpiringSoonScreen` |
 | `notifications` | Membre 4 | `AppNotification` | `NotificationRepository`, `NotificationFirestore`, `NotificationService` | `NotificationsScreen` |
 | `chatbot` | Membre 4 | `chatbot_engine.dart` (predefined questions + keyword matching) | — | `ChatbotScreen` |
-| `profile` | Membre 1 | `UserProfile`, `UserSettings` | `UserProfileRepository`, `UserProfileFirestore` | `ProfileScreen` |
+| `profile` | Membre 1 | `UserProfile`, `UserSettings`, `UserRole` | `UserProfileRepository`, `UserProfileFirestore` | `ProfileScreen`, `EditProfileScreen`, `SettingsScreen`, `ChangePasswordScreen` |
 | `recipes` | Membre 5 | `allRecipes` (fridge book + extra recipes), `recipe_search.dart`, `SavedRecipe`, `nutrition.dart`, `health_goal.dart` | `SavedRecipesRepository`, `SavedRecipesFirestore`, `HealthProfileRepository`, `HealthProfileFirestore` | `RecipeBookScreen`, `SavedRecipesScreen`, `RecipeViewScreen` |
 | `statistics` | Membre 5 | `impact.dart` (meals saved, CO₂, score), `activity.dart` (action history), `nutrition_stats.dart`, `challenges.dart` | — (computed from the fridge history and donations) | `StatisticsScreen`, `ActivityHistoryScreen` |
 

@@ -19,7 +19,10 @@ Future<void> _type(WidgetTester tester, String key, String text) async {
 }
 
 Future<void> _tap(WidgetTester tester, String key) async {
+  // Settle first: a focused field scrolls itself back into view after typing.
+  await tester.pumpAndSettle();
   await tester.ensureVisible(find.byKey(ValueKey(key)));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(ValueKey(key)));
   await tester.pumpAndSettle();
 }
@@ -110,6 +113,42 @@ void main() {
   });
 
   group('RegisterScreen', () {
+    testWidgets('ticks each password rule while typing', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: RegisterScreen(repository: auth)),
+      );
+      bool ticked(String id) => find
+          .descendant(
+            of: find.byKey(ValueKey('password-rule-$id')),
+            matching: find.byIcon(Icons.check_circle_rounded),
+          )
+          .evaluate()
+          .isNotEmpty;
+
+      expect(find.byKey(const ValueKey('password-checklist')), findsOneWidget);
+      for (final id in ['length', 'letter', 'number', 'match']) {
+        expect(ticked(id), isFalse, reason: id);
+      }
+
+      await _type(tester, 'register-password-field', 'abc');
+      await tester.pumpAndSettle();
+      expect(ticked('letter'), isTrue);
+      expect(ticked('length'), isFalse);
+      expect(ticked('number'), isFalse);
+
+      await _type(tester, 'register-password-field', 'abc123');
+      await _type(tester, 'register-confirm-field', 'abc123');
+      await tester.pumpAndSettle();
+      for (final id in ['length', 'letter', 'number', 'match']) {
+        expect(ticked(id), isTrue, reason: id);
+      }
+      // Register has no current password, so no "different" row.
+      expect(
+        find.byKey(const ValueKey('password-rule-different')),
+        findsNothing,
+      );
+    });
+
     testWidgets('rejects mismatching passwords', (tester) async {
       await tester.pumpWidget(
         MaterialApp(home: RegisterScreen(repository: auth)),

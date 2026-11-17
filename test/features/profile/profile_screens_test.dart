@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foodsaver/features/auth/data/auth_repository.dart';
 import 'package:foodsaver/features/profile/data/user_profile_repository.dart';
+import 'package:foodsaver/features/profile/presentation/change_password_screen.dart';
 import 'package:foodsaver/features/profile/presentation/edit_profile_screen.dart';
 import 'package:foodsaver/features/profile/presentation/profile_screen.dart';
 import 'package:foodsaver/features/profile/presentation/settings_screen.dart';
@@ -123,18 +124,63 @@ void main() {
         app(SettingsScreen(auth: auth, profiles: profiles)),
       );
       await _tap(tester, 'settings-change-password');
+      expect(find.byType(ChangePasswordScreen), findsOneWidget);
       await _enter(tester, 'change-password-current', 'wrong-one1');
       await _enter(tester, 'change-password-new', 'newpass12');
       await _enter(tester, 'change-password-confirm', 'newpass12');
       await _tap(tester, 'change-password-submit');
-      expect(find.text('Wrong email or password.'), findsOneWidget);
+      expect(find.text('Your current password is incorrect.'), findsOneWidget);
 
       await _enter(tester, 'change-password-current', 'secret12');
       await _tap(tester, 'change-password-submit');
+      expect(find.byType(ChangePasswordScreen), findsNothing);
       expect(find.text('Password changed'), findsOneWidget);
       await auth.signOut();
       await auth.signIn(email: 'maya@example.com', password: 'newpass12');
       expect(auth.isSignedIn, isTrue);
+    });
+
+    testWidgets('change password ticks the rules and refuses the same one', (
+      tester,
+    ) async {
+      await tester.pumpWidget(app(ChangePasswordScreen(auth: auth)));
+      bool ticked(String id) => find
+          .descendant(
+            of: find.byKey(ValueKey('password-rule-$id')),
+            matching: find.byIcon(Icons.check_circle_rounded),
+          )
+          .evaluate()
+          .isNotEmpty;
+
+      await _enter(tester, 'change-password-current', 'secret12');
+      await _enter(tester, 'change-password-new', 'secret12');
+      await _enter(tester, 'change-password-confirm', 'secret12');
+      await tester.pumpAndSettle();
+      for (final id in ['length', 'letter', 'number', 'match']) {
+        expect(ticked(id), isTrue, reason: id);
+      }
+      expect(ticked('different'), isFalse);
+
+      await _tap(tester, 'change-password-submit');
+      expect(
+        find.text('Choose a password different from your current one.'),
+        findsOneWidget,
+      );
+
+      await _enter(tester, 'change-password-new', 'fresh123');
+      await tester.pumpAndSettle();
+      expect(ticked('different'), isTrue);
+      expect(ticked('match'), isFalse);
+    });
+
+    testWidgets('forgot current password sends a reset link', (tester) async {
+      await tester.pumpWidget(app(ChangePasswordScreen(auth: auth)));
+      await _tap(tester, 'change-password-forgot');
+      expect(
+        find.byKey(const ValueKey('change-password-reset-sent')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('maya@example.com'), findsOneWidget);
     });
 
     testWidgets('deletes the account and returns to Welcome', (tester) async {

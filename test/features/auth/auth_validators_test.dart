@@ -27,16 +27,42 @@ void main() {
     test('requires 6 characters with a letter and a number', () {
       expect(validateNewPassword(''), 'Enter a password.');
       expect(validateNewPassword('ab1'), 'Use at least 6 characters.');
-      expect(
-        validateNewPassword('abcdef'),
-        'Use at least one letter and one number.',
-      );
-      expect(
-        validateNewPassword('123456'),
-        'Use at least one letter and one number.',
-      );
+      expect(validateNewPassword('123456'), 'Use at least one letter.');
+      expect(validateNewPassword('abcdef'), 'Use at least one number.');
       expect(validateNewPassword('abc123'), isNull);
     });
+
+    test('agrees with the checklist rules', () {
+      for (final password in ['', 'a', 'ab1', 'abcdef', '123456', 'abc123']) {
+        final allMet = passwordRules.every((rule) => rule.isMetBy(password));
+        expect(
+          validateNewPassword(password) == null,
+          allMet && password.isNotEmpty,
+          reason: password,
+        );
+      }
+    });
+  });
+
+  test('passwordRules tick each requirement separately', () {
+    Map<String, bool> check(String password) => {
+      for (final rule in passwordRules) rule.id: rule.isMetBy(password),
+    };
+    expect(check('a'), {'length': false, 'letter': true, 'number': false});
+    expect(check('123456'), {'length': true, 'letter': false, 'number': true});
+    expect(check('abc123'), {'length': true, 'letter': true, 'number': true});
+  });
+
+  test('validateChangedPassword also requires a different password', () {
+    expect(
+      validateChangedPassword('abc', 'old123'),
+      'Use at least 6 characters.',
+    );
+    expect(
+      validateChangedPassword('old123', 'old123'),
+      'Choose a password different from your current one.',
+    );
+    expect(validateChangedPassword('new123', 'old123'), isNull);
   });
 
   test('validatePasswordConfirmation must match the password', () {
