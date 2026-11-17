@@ -61,6 +61,7 @@ features/<feature>/
 | `home` | Membre 5 | — | — | `FoodSaverHomePage` (dashboard with real data + bottom nav) |
 | `fridge` | Membre 2 | `FoodItem`, `FoodCategory`, `FridgeEvent`, `FridgeStats`, formatters | `FridgeRepository`, `FridgeFirestore` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
 | `donations` | Membre 3 | `Donation`, `DonationRequest`, `Beneficiary` | `DonationRepository`, `DonationFirestore` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen` |
+| `goals` | Membre 2 | `DonationGoal`, `GoalContribution`, unit conversion, food ↔ goal matching | `GoalRepository`, `GoalFirestore` | `DonationGoalsScreen`, `GoalDetailsScreen`, `CreateGoalScreen`, `RestaurantGoalsTab`, contribute sheet |
 | `list` | Membre 4 | `ShoppingList`, `ShoppingItem`, `ShoppingCategory` | `ShoppingListRepository`, `ShoppingListFirestore` | `ListScreen`, `AddItemScreen` |
 | `expiry` | Membre 4 | `expiry_alerts.dart` (7d / 3d / same-day rules) | — (computed from the fridge) | `ExpiringSoonScreen` |
 | `notifications` | Membre 4 | `AppNotification` | `NotificationRepository`, `NotificationFirestore`, `NotificationService` | `NotificationsScreen` |
@@ -116,6 +117,7 @@ Each `*Firestore` class wraps one part of the database and holds top-level `xToM
 | `users/{userId}/saved_recipes/{recipeId}` | favorite recipes (`savedAt`) |
 | `users/{userId}/health/profile` | health goal (`goal`, `updatedAt`) |
 | `donations/{donationId}` | shared between all users, requests embedded |
+| `donation_goals/{goalId}` | needs of restaurants and charities, contributions embedded (appended with `arrayUnion`), listened to in real time |
 
 `userId` comes from `CurrentUser.uid` ([lib/core/session/current_user.dart](lib/core/session/current_user.dart)): the signed-in account, bound by `SessionBinder`. Each repository has `connect()` and `clear()` so accounts never see each other data. Without a bound user (tests) it is the fixed `demo-user`.
 
@@ -124,6 +126,7 @@ Each `*Firestore` class wraps one part of the database and holds top-level `xToM
 ```
             FridgeRepository  ◄──── single source of truth for expiry dates
             │   │   │   │
+            │   │   │   │   └──► GoalRepository (giving to a goal from the fridge removes the quantity, converted to the fridge unit)
             │   │   │   └──► NotificationService (schedules 7d / 3d / 0d alerts at 09:00)
             │   │   └──────► expiry_alerts.dart ─► Home "Expiring soon", ExpiringSoonScreen, NotificationsScreen
             │   └──────────► DonationRepository (donating removes quantity from the fridge; cancelling puts it back)

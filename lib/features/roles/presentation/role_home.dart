@@ -4,6 +4,8 @@ import '../../auth/data/auth_repository.dart';
 import '../../donations/data/donation_repository.dart';
 import '../../fridge/data/fridge_repository.dart';
 import '../../fridge/presentation/fridge_screen.dart';
+import '../../goals/data/goal_repository.dart';
+import '../../goals/presentation/restaurant_goals_tab.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../profile/data/user_profile_repository.dart';
 import '../../profile/domain/user_role.dart';
@@ -16,10 +18,11 @@ import 'role_shell.dart';
 /// Start screen after sign-in: each role gets its own app.
 ///
 /// - user: the full app.
-/// - restaurant: Donations (request), Stock (its own fridge), History (its
+/// - restaurant: Donations (request), Goals (what it needs, with the
+///   progress made by donors), Stock (its own fridge), History (its
 ///   requests) and Profile.
-/// - admin: Requests (accept or refuse), History (answered requests) and
-///   Profile.
+/// - admin: Requests (accept or refuse), Goals (every goal), History
+///   (answered requests) and Profile.
 class RoleHome extends StatelessWidget {
   const RoleHome({
     super.key,
@@ -27,7 +30,11 @@ class RoleHome extends StatelessWidget {
     this.auth,
     this.donations,
     this.fridge,
+    this.goals,
   });
+
+  /// Defaults to [GoalRepository.instance]; injectable for tests.
+  final GoalRepository? goals;
 
   /// Defaults to [DonationRepository.instance]; injectable for tests.
   final DonationRepository? donations;
@@ -72,6 +79,15 @@ class RoleHome extends StatelessWidget {
                     ),
                   ),
                   RoleTab(
+                    label: 'Goals',
+                    icon: Icons.flag_outlined,
+                    child: RestaurantGoalsTab(
+                      title: 'My goals',
+                      repository: goals,
+                      profiles: profiles,
+                    ),
+                  ),
+                  RoleTab(
                     label: 'Stock',
                     icon: Icons.kitchen_outlined,
                     child: FridgeScreen(
@@ -107,6 +123,16 @@ class RoleHome extends StatelessWidget {
                     title: 'Pending requests',
                     emptyMessage: 'Donation requests from restaurants will appear here for you to accept or refuse.',
                     donations: donations,
+                  ),
+                ),
+                RoleTab(
+                  label: 'Goals',
+                  icon: Icons.flag_outlined,
+                  child: RestaurantGoalsTab(
+                    title: 'Donation goals',
+                    forAdmin: true,
+                    repository: goals,
+                    profiles: profiles,
                   ),
                 ),
                 RoleTab(

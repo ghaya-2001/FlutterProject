@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/screen_header.dart';
 import '../../fridge/domain/food_item.dart';
 import '../../fridge/domain/fridge_formatters.dart';
+import '../../goals/data/goal_repository.dart';
+import '../../goals/domain/donation_goal.dart';
+import '../../goals/presentation/donation_goals_screen.dart';
+import '../../goals/presentation/goal_details_screen.dart';
+import '../../goals/presentation/widgets/goal_widgets.dart';
 import '../data/donation_repository.dart';
 import '../domain/donation.dart';
 import 'create_donation_screen.dart';
@@ -12,13 +17,17 @@ import 'widgets/donation_widgets.dart';
 
 /// Main donations screen.
 ///
-/// Foods worth donating and the user's active donations. Users only offer
-/// food: restaurants are the ones who request it (see `RoleHome`).
+/// Foods worth donating, the goals of restaurants and charities, and the
+/// user's active donations. Users only offer food: restaurants are the ones
+/// who request it (see `RoleHome`).
 class DonationsScreen extends StatefulWidget {
-  const DonationsScreen({super.key, this.repository});
+  const DonationsScreen({super.key, this.repository, this.goals});
 
   /// Defaults to [DonationRepository.instance]; injectable for tests.
   final DonationRepository? repository;
+
+  /// Defaults to [GoalRepository.instance]; injectable for tests.
+  final GoalRepository? goals;
 
   @override
   State<DonationsScreen> createState() => _DonationsScreenState();
@@ -27,6 +36,30 @@ class DonationsScreen extends StatefulWidget {
 class _DonationsScreenState extends State<DonationsScreen> {
   DonationRepository get _repository =>
       widget.repository ?? DonationRepository.instance;
+  GoalRepository get _goals => widget.goals ?? GoalRepository.instance;
+
+  /// Number of open goals shown here before "See all".
+  static const _goalPreviewCount = 2;
+
+  Future<void> _openGoal(DonationGoal goal) async {
+    final message = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) =>
+            GoalDetailsScreen(goalId: goal.id, repository: _goals),
+      ),
+    );
+    if (message != null && mounted) {
+      showAppSnackBar(context, message);
+    }
+  }
+
+  void _openAllGoals() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DonationGoalsScreen(repository: _goals),
+      ),
+    );
+  }
 
   Future<void> _create({String? foodId}) async {
     final name = await Navigator.of(context).push<String>(
@@ -69,7 +102,11 @@ class _DonationsScreenState extends State<DonationsScreen> {
       ),
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: Listenable.merge([_repository, _repository.fridge]),
+          listenable: Listenable.merge([
+            _repository,
+            _repository.fridge,
+            _goals,
+          ]),
           builder: (context, _) {
             return ListView(
               padding: const EdgeInsets.fromLTRB(22, 18, 22, 96),
@@ -91,7 +128,7 @@ class _DonationsScreenState extends State<DonationsScreen> {
                 ),
                 const SizedBox(height: 18),
                 _SummaryCard(repository: _repository),
-                const SizedBox(height: 18),
+                ..._buildGoals(),
                 ..._buildMine(),
               ],
             );
@@ -99,6 +136,34 @@ class _DonationsScreenState extends State<DonationsScreen> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildGoals() {
+    final open = _goals.openGoals;
+    return [
+      SectionTitle(
+        'Donation goals',
+        trailing: TextButton(
+          key: const ValueKey('see-all-goals-button'),
+          onPressed: _openAllGoals,
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF2E7D32)),
+          child: Text(open.isEmpty ? 'History' : 'See all (${open.length})'),
+        ),
+      ),
+      if (open.isEmpty)
+        const EmptyCard(
+          icon: Icons.flag_outlined,
+          message: 'No restaurant or charity needs anything right now.',
+        )
+      else
+        for (final goal in open.take(_goalPreviewCount))
+          GoalCard(
+            key: ValueKey('donations-goal-${goal.id}'),
+            goal: goal,
+            now: _goals.now,
+            onTap: () => _openGoal(goal),
+          ),
+    ];
   }
 
   List<Widget> _buildMine() {

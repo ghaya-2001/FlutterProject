@@ -84,8 +84,46 @@ Code: `lib/features/fridge/`
 | Recettes anti-gaspillage ("Cook now") | Fridge → Cook now: built-in recipe book matched against the fridge, recipes using the foods that expire soonest first; adjustable quantities; "I cooked it" removes them from the stock and counts them as eaten; "Add missing to shopping list" (Membre 4 lists) |
 | Courses → frigo | Fridge → Groceries: items checked as bought in the shopping lists go to the fridge in one tap, expiry date suggested from the shelf life of the category (editable), each item imported only once |
 | Badges / succès | Anti-waste stats → Achievements: First bite, Food saver, Last-minute rescue, Anti-waste chef, Balanced diet, Zero-waste week, Anti-waste champion, with progress bars |
+| Objectifs de dons (asked by the professor) | See "Donation goals" below |
 
 Tests: `test/features/fridge/` (including `fridge_firestore_test.dart` with a fake Firestore and `fridge_stats_test.dart`)
+
+### Donation goals (Membre 2, asked by the professor)
+
+Code: `lib/features/goals/`. A restaurant or a charity publishes what it needs ("10 kg of rice for the soup kitchen", optional deadline). Users give part of it, **from their fridge** or with food they buy; every gift moves a progress bar until the target is reached.
+
+| Folder | Content |
+| --- | --- |
+| `domain/` | `DonationGoal` (collected, remaining, progress, status: open / reached / closed / ended), `GoalContribution`, unit conversion (kg ↔ g, L ↔ ml), fridge food ↔ goal matching (case, accents and plural ignored) |
+| `data/` | `GoalRepository` (ChangeNotifier, real-time Firestore listener), `GoalFirestore` |
+| `presentation/` | `DonationGoalsScreen` (users), `GoalDetailsScreen`, `CreateGoalScreen` and `RestaurantGoalsTab` (restaurants; read-only for the admin), `showContributeSheet`, `GoalCard` / `GoalProgressBar` |
+
+| Who | Where | What |
+| --- | --- | --- |
+| Restaurant / charity | Goals tab → `+` | Publish a goal: food, target + unit, category, optional title, deadline and reason |
+| Restaurant / charity | Goals tab | Follow every goal live: progress, donors, latest gift; close a goal, or delete it while nobody gave |
+| User | Donations → Donation goals (and "See all") | Open goals with their progress; "You have … in your fridge" when a fridge food matches |
+| User | Goal → Give | Choose a matching fridge food (converted to the goal unit, it leaves the fridge without counting as eaten) or "Food not in my fridge"; the quantity is capped at what is still needed and at what the user has |
+| User | Fridge → food details | "<Charity> needs milk" banner with a Give button when an open goal asks for this food |
+| Admin | Goals tab | Every goal of every restaurant |
+
+- The progress is never stored: it is the sum of the contributions, which are appended with `arrayUnion`, so two donors giving at the same moment both count. The goal is reached when the sum reaches the target; it can no longer receive gifts once reached, closed or past its deadline.
+- Tests: `test/features/goals/` (rules, conversions, fridge link, screens for users, restaurants and the admin).
+
+**Demo data** — `dart run tool/seed_demo_goals.dart` (default password `Demo2026`) creates or reuses five demo accounts, fills Khaoula's fridge (12 foods + 2 weeks of history for the anti-waste stats) and publishes 5 goals with some progress. Run it again the day before the demo: all dates are relative to today and the goals start again from the same progress.
+
+| Account | Role | Used for |
+| --- | --- | --- |
+| `khaoula.demo@example.com` | user | Fridge, expiry, stats, giving to goals |
+| `maintendue.demo@example.com` | restaurant (Association Main Tendue) | Goals: rice 5.5/10 kg, milk 10/12 L, pasta reached |
+| `jardin.demo@example.com` | restaurant (Le Jardin Solidaire) | Goals: eggs 24/60, tomatoes 1/5 kg |
+| `sami.demo@example.com`, `lina.demo@example.com` | user | The other donors already in the goals |
+
+Scenario (two phones, or sign out / in):
+1. Charity phone (`maintendue`): Goals tab → rice 55 %, milk 83 %, pasta reached. Publish a new goal with `+`.
+2. Khaoula's phone: Fridge → Milk (expires in 2 days) → banner "Association Main Tendue needs milk" → Give 2 L → **goal reached**, the milk leaves the fridge.
+3. Donations → Donation goals → Rice for the soup kitchen → Give → choose Basmati rice → 2 kg → 75 %.
+4. Back on the charity phone: the bars moved in real time, "Latest: Khaoula gave 2 kg of rice".
 
 ## Module 4 — Shopping list (Gestion de la Liste de Courses)
 
@@ -195,9 +233,10 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 | `users/{userId}/saved_recipes/{recipeId}` | favorite recipes: `savedAt` (the recipe itself comes from the app) | `lib/features/recipes/data/saved_recipes_firestore.dart` |
 | `users/{userId}/health/profile` | health goal: `goal`, `updatedAt` | `lib/features/recipes/data/health_profile_firestore.dart` |
 | `donations/{donationId}` | `donorId`, `foodName`, `category`, `quantity`, `unit`, `expiryDate`, `status`, `requests: [...]` | `lib/features/donations/data/donation_firestore.dart` |
+| `donation_goals/{goalId}` | `restaurantId`, `restaurantName`, `title`, `foodName`, `category`, `target`, `unit`, `description`, `deadline`, `createdAt`, `closed`, `contributions: [{id, donorId, donorName, quantity, createdAt, fromFridge}]` (listened to in real time) | `lib/features/goals/data/goal_firestore.dart` |
 
 - Every module reads and writes under the signed-in uid (`CurrentUser.uid`, `lib/core/session/current_user.dart`). `SessionBinder` empties and reloads the repositories when the account changes. Without Firebase (tests) the fixed `demo-user` is used.
-- Roles (beyond the original split): a normal **user** donates food and uses the fridge, a **restaurant** requests donations, an **admin** accepts or refuses requests. The role is chosen at sign-up (user or restaurant, never admin), cannot be changed afterwards, and admin is set by hand in the Firebase console.
+- Roles (beyond the original split): a normal **user** donates food and uses the fridge, a **restaurant** requests donations and publishes donation goals, an **admin** accepts or refuses requests. The role is chosen at sign-up (user or restaurant, never admin), cannot be changed afterwards, and admin is set by hand in the Firebase console.
 - Expiry alerts are never stored: they are recomputed from the fridge expiry dates.
 - If Firebase is not configured (or in tests), the app falls back to in-memory data.
 - Rules: `firestore.rules` is the auth-based version with roles (tested with the emulator: `cd firestore-tests && npm test`; not deployed yet). The previous open development rules are kept as a comment at the bottom.

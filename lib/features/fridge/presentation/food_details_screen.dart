@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../donations/data/donation_repository.dart';
 import '../../donations/presentation/create_donation_screen.dart';
+import '../../goals/data/goal_repository.dart';
+import '../../goals/domain/donation_goal.dart';
+import '../../goals/presentation/widgets/contribute_sheet.dart';
+import '../../goals/presentation/widgets/goal_widgets.dart';
 import '../data/fridge_repository.dart';
 import '../domain/food_item.dart';
 import '../domain/fridge_formatters.dart';
@@ -17,8 +21,13 @@ class FoodDetailsScreen extends StatelessWidget {
     required this.repository,
     required this.foodId,
     this.donationRepository,
+    this.goalRepository,
     this.canDonate = true,
   });
+
+  /// Defaults to [GoalRepository.instance]: shows the restaurants and
+  /// charities that need this food right now.
+  final GoalRepository? goalRepository;
 
   /// False for restaurants (their stock cannot be donated): the Donate button
   /// is hidden.
@@ -48,6 +57,28 @@ class FoodDetailsScreen extends StatelessWidget {
       return;
     }
     _showSnackBar(context, '$name offered for donation');
+  }
+
+  Future<void> _giveToGoal(
+    BuildContext context,
+    FoodItem item,
+    DonationGoal goal,
+  ) async {
+    final message = await showContributeSheet(
+      context,
+      repository: goalRepository ?? GoalRepository.instance,
+      goal: goal,
+      initialFoodId: item.id,
+    );
+    if (message == null || !context.mounted) {
+      return;
+    }
+    if (repository.itemById(item.id) == null) {
+      // Everything was given: the food left the fridge.
+      Navigator.of(context).pop(message);
+      return;
+    }
+    _showSnackBar(context, message);
   }
 
   Future<void> _consume(BuildContext context, FoodItem item) async {
@@ -163,7 +194,10 @@ class FoodDetailsScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: repository,
+          listenable: Listenable.merge([
+            repository,
+            if (canDonate) goalRepository ?? GoalRepository.instance,
+          ]),
           builder: (context, _) {
             final item = repository.itemById(foodId);
             return SingleChildScrollView(
@@ -345,6 +379,14 @@ class FoodDetailsScreen extends StatelessWidget {
           ],
         ),
       ),
+      if (canDonate && !item.isExpired(now))
+        for (final goal
+            in (goalRepository ?? GoalRepository.instance).goalsForFood(item))
+          _NeededBy(
+            key: ValueKey('food-needed-by-${goal.id}'),
+            goal: goal,
+            onGive: () => _giveToGoal(context, item, goal),
+          ),
       const SizedBox(height: 24),
       SizedBox(
         width: double.infinity,
@@ -465,6 +507,68 @@ class FoodDetailsScreen extends StatelessWidget {
         ),
       ],
     ];
+  }
+}
+
+/// A restaurant or charity needs this food: give it instead of letting it
+/// wait in the fridge.
+class _NeededBy extends StatelessWidget {
+  const _NeededBy({super.key, required this.goal, required this.onGive});
+
+  final DonationGoal goal;
+  final VoidCallback onGive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFC8E6C9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.flag_rounded, color: Color(0xFF2E7D32)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${goal.restaurantName} needs ${goal.foodName.toLowerCase()}',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1B1B1B),
+                  ),
+                ),
+              ),
+              TextButton(
+                key: ValueKey('give-food-to-${goal.id}'),
+                onPressed: onGive,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: const Color(0xFF2E7D32),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text('Give'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          GoalProgressBar(goal: goal, height: 8),
+          const SizedBox(height: 6),
+          Text(
+            '${goalProgressLabel(goal)} · ${goal.title}',
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+        ],
+      ),
+    );
   }
 }
 
