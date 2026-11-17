@@ -9,6 +9,7 @@ import '../../list/data/shopping_list_repository.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../profile/data/user_profile_repository.dart';
 import '../../profile/domain/user_role.dart';
+import '../../recipes/data/health_profile_repository.dart';
 import '../../recipes/data/saved_recipes_repository.dart';
 import 'auth_repository.dart';
 
@@ -17,8 +18,9 @@ import 'auth_repository.dart';
 /// When the signed-in account changes (sign-in, sign-out, another account),
 /// it points [CurrentUser] at the new uid, empties every repository so the
 /// next account never sees the previous one's data, then loads the new
-/// account's data. Fridge, lists, notifications and saved recipes are only
-/// loaded for normal users; restaurants and admins only need donations.
+/// account's data. Fridge, lists, notifications, saved recipes and the
+/// health goal are only loaded for normal users; restaurants and admins only
+/// need donations.
 class SessionBinder {
   SessionBinder({
     AuthRepository? auth,
@@ -28,13 +30,15 @@ class SessionBinder {
     NotificationRepository? notifications,
     DonationRepository? donations,
     SavedRecipesRepository? savedRecipes,
+    HealthProfileRepository? healthProfile,
   }) : _auth = auth ?? AuthRepository.instance,
        _profiles = profiles ?? UserProfileRepository.instance,
        _fridge = fridge ?? FridgeRepository.instance,
        _shopping = shopping ?? ShoppingListRepository.instance,
        _notifications = notifications ?? NotificationRepository.instance,
        _donations = donations ?? DonationRepository.instance,
-       _savedRecipes = savedRecipes ?? SavedRecipesRepository.instance {
+       _savedRecipes = savedRecipes ?? SavedRecipesRepository.instance,
+       _healthProfile = healthProfile ?? HealthProfileRepository.instance {
     _auth.addListener(_onAuthChanged);
     _onAuthChanged();
   }
@@ -46,6 +50,7 @@ class SessionBinder {
   final NotificationRepository _notifications;
   final DonationRepository _donations;
   final SavedRecipesRepository _savedRecipes;
+  final HealthProfileRepository _healthProfile;
 
   String? _boundUid;
 
@@ -61,6 +66,7 @@ class SessionBinder {
     _notifications.clear();
     _donations.clear();
     _savedRecipes.clear();
+    _healthProfile.clear();
     if (uid != null) {
       unawaited(_connect(uid));
     }
@@ -78,6 +84,7 @@ class SessionBinder {
         _shopping.connect();
         _notifications.connect();
         _savedRecipes.connect();
+        _healthProfile.connect();
       }
       _donations.connect();
     } catch (error) {

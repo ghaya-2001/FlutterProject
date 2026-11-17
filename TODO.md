@@ -14,6 +14,7 @@ After Phase 1 (2026-11-12): analyze clean · **166 passed, 0 failed** (the 3 lis
 After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 After business-name editing (2026-11-13): analyze clean · **191 passed, 0 failed** · 27 rules tests.
 After Membre 5 recipes + dashboard (2026-11-13, `feature/m5-recipes-dashboard`): analyze clean · **248 passed, 0 failed** · 28 rules tests.
+After the Membre 5 healthy-lifestyle bonus (2026-11-16): analyze clean · **277 passed, 0 failed** · 29 rules tests.
 
 ---
 
@@ -122,6 +123,13 @@ Spec: [docs/SPEC_MEMBRE5.md](docs/SPEC_MEMBRE5.md). Code: `lib/features/recipes/
 - [x] Screens: Home Dashboard, Recipes, Saved Recipes, Statistics (+ Recipe details, Activity history)
 - [x] Tests: `test/features/recipes/`, `test/features/statistics/`, `test/features/home/`, SessionBinder, rules emulator test
 - [ ] Show the profile photo on the Home header (optional)
+
+### Bonus: healthy lifestyle ✅ (2026-11-16, suggested by the professor; spec §8)
+- [x] Calories and macros for every recipe (per portion, Light / Balanced / Rich) in the recipe details and cards
+- [x] Health tags (vegetarian, high protein, low calorie, gluten free) + matching filters on Recipes
+- [x] Health goal in the profile (lose weight, stay balanced, build muscle) ranks the suggestions, `users/{uid}/health/profile`
+- [x] Statistics: calories and macros of the cooked meals per period, meals fitting the goal
+- [x] Weekly healthy challenges (veggie, protein, light, home chef, zero waste) with progress
 
 ## Extras (in the code, not in the final split)
 - [x] Donations (`lib/features/donations/`)

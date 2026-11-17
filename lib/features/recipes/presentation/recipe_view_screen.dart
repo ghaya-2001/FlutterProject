@@ -7,9 +7,12 @@ import '../../fridge/domain/recipes.dart';
 import '../../fridge/presentation/recipes_screen.dart' show defaultCookAmount;
 import '../../list/data/shopping_list_repository.dart';
 import '../../list/domain/shopping_category.dart';
+import '../data/health_profile_repository.dart';
 import '../data/saved_recipes_repository.dart';
 import '../domain/extra_recipes.dart';
+import '../domain/nutrition.dart';
 import '../domain/recipe_search.dart';
+import 'widgets/health_widgets.dart';
 import 'widgets/recipe_tile.dart';
 
 /// Details of one recipe: what the fridge already has, what is missing,
@@ -21,6 +24,7 @@ class RecipeViewScreen extends StatelessWidget {
     this.fridge,
     this.savedRecipes,
     this.shopping,
+    this.healthProfile,
   });
 
   final String recipeId;
@@ -29,10 +33,13 @@ class RecipeViewScreen extends StatelessWidget {
   final FridgeRepository? fridge;
   final SavedRecipesRepository? savedRecipes;
   final ShoppingListRepository? shopping;
+  final HealthProfileRepository? healthProfile;
 
   FridgeRepository get _fridge => fridge ?? FridgeRepository.instance;
   SavedRecipesRepository get _saved =>
       savedRecipes ?? SavedRecipesRepository.instance;
+  HealthProfileRepository get _health =>
+      healthProfile ?? HealthProfileRepository.instance;
 
   void _addMissing(BuildContext context, RecipeMatch match) {
     final list = shopping ?? ShoppingListRepository.instance;
@@ -95,7 +102,7 @@ class RecipeViewScreen extends StatelessWidget {
                 ),
               )
             : ListenableBuilder(
-                listenable: Listenable.merge([_fridge, _saved]),
+                listenable: Listenable.merge([_fridge, _saved, _health]),
                 builder: (context, _) => _buildBody(context, recipe),
               ),
       ),
@@ -106,6 +113,7 @@ class RecipeViewScreen extends StatelessWidget {
     final now = _fridge.now;
     final match = matchRecipe(recipe, _fridge.items, now);
     final isSaved = _saved.isSaved(recipe.id);
+    final health = healthOf(recipe);
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
@@ -183,6 +191,10 @@ class RecipeViewScreen extends StatelessWidget {
             ],
           ),
         ),
+        if (health != null) ...[
+          const SectionTitle('Nutrition'),
+          NutritionCard(health: health, goal: _health.goal),
+        ],
         const SectionTitle('Ingredients'),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

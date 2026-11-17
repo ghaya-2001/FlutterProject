@@ -10,8 +10,11 @@ import '../../list/data/shopping_list_repository.dart';
 import '../../fridge/data/fridge_repository.dart';
 import '../../fridge/presentation/fridge_screen.dart';
 import '../../list/presentation/list_screen.dart';
+import '../../recipes/data/health_profile_repository.dart';
 import '../../recipes/data/saved_recipes_repository.dart';
+import '../../recipes/domain/health_goal.dart';
 import '../../recipes/presentation/saved_recipes_screen.dart';
+import '../../recipes/presentation/widgets/health_widgets.dart';
 import '../../statistics/domain/impact.dart';
 import '../data/user_profile_repository.dart';
 import 'edit_profile_screen.dart';
@@ -205,6 +208,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   MaterialPageRoute<void>(
                     builder: (context) => const SavedRecipesScreen(),
                   ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          // Membre 5: the goal ranks the recipe suggestions.
+          ListenableBuilder(
+            listenable: HealthProfileRepository.instance,
+            builder: (context, _) {
+              final goal = HealthProfileRepository.instance.goal;
+              return _ProfileOptionRow(
+                key: const ValueKey('profile-health-goal'),
+                icon: Icons.track_changes_rounded,
+                title: 'Health goal',
+                subtitle: goal == HealthGoal.none
+                    ? 'Choose a goal for your recipes'
+                    : goal.label,
+                onTap: () => showHealthGoalPicker(
+                  context,
+                  HealthProfileRepository.instance,
                 ),
               );
             },
@@ -476,6 +499,7 @@ class _ProfileStatCard extends StatelessWidget {
 
 class _ProfileOptionRow extends StatelessWidget {
   const _ProfileOptionRow({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,

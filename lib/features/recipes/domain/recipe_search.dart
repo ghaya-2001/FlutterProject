@@ -1,13 +1,18 @@
 import '../../fridge/domain/food_item.dart';
 import '../../fridge/domain/recipes.dart';
 import 'extra_recipes.dart';
+import 'nutrition.dart';
 
 /// Filters of the Recipes screen.
 enum RecipeFilter {
   all('All'),
   readyToCook('Ready to cook'),
   usesFridge('Uses my fridge'),
-  quick('Quick');
+  quick('Quick'),
+  vegetarian('Vegetarian'),
+  highProtein('High protein'),
+  lowCalorie('Low calorie'),
+  glutenFree('Gluten free');
 
   const RecipeFilter(this.label);
 
@@ -89,6 +94,14 @@ bool _passes(RecipeMatch match, RecipeFilter filter) {
       return usesFridge(match);
     case RecipeFilter.quick:
       return match.recipe.minutes <= quickRecipeMinutes;
+    case RecipeFilter.vegetarian:
+      return tagsOf(match.recipe).contains(HealthTag.vegetarian);
+    case RecipeFilter.highProtein:
+      return tagsOf(match.recipe).contains(HealthTag.highProtein);
+    case RecipeFilter.lowCalorie:
+      return tagsOf(match.recipe).contains(HealthTag.lowCalorie);
+    case RecipeFilter.glutenFree:
+      return tagsOf(match.recipe).contains(HealthTag.glutenFree);
   }
 }
 

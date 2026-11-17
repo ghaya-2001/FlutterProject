@@ -156,6 +156,16 @@ describe('private data users/{uid}/...', () => {
     await assertFails(setDoc(doc(as('admin1'), path), { savedAt: new Date() }));
     await assertFails(getDoc(doc(anon(), path)));
   });
+
+  it('keeps the health goal private to the owner (Membre 5)', async () => {
+    const path = 'users/donor1/health/profile';
+    const goal = { goal: 'loseWeight', updatedAt: new Date() };
+    await assertSucceeds(setDoc(doc(as('donor1'), path), goal));
+    await assertSucceeds(getDoc(doc(as('donor1'), path)));
+    await assertFails(getDoc(doc(as('other1'), path)));
+    await assertFails(setDoc(doc(as('rest1'), path), goal));
+    await assertFails(getDoc(doc(anon(), path)));
+  });
 });
 
 describe('donation events users/{uid}/notifications', () => {

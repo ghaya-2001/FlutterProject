@@ -66,8 +66,8 @@ features/<feature>/
 | `notifications` | Membre 4 | `AppNotification` | `NotificationRepository`, `NotificationFirestore`, `NotificationService` | `NotificationsScreen` |
 | `chatbot` | Membre 4 | `chatbot_engine.dart` (predefined questions + keyword matching) | — | `ChatbotScreen` |
 | `profile` | Membre 1 | `UserProfile`, `UserSettings` | `UserProfileRepository`, `UserProfileFirestore` | `ProfileScreen` |
-| `recipes` | Membre 5 | `allRecipes` (fridge book + extra recipes), `recipe_search.dart`, `SavedRecipe` | `SavedRecipesRepository`, `SavedRecipesFirestore` | `RecipeBookScreen`, `SavedRecipesScreen`, `RecipeViewScreen` |
-| `statistics` | Membre 5 | `impact.dart` (meals saved, CO₂, score), `activity.dart` (action history) | — (computed from the fridge history and donations) | `StatisticsScreen`, `ActivityHistoryScreen` |
+| `recipes` | Membre 5 | `allRecipes` (fridge book + extra recipes), `recipe_search.dart`, `SavedRecipe`, `nutrition.dart`, `health_goal.dart` | `SavedRecipesRepository`, `SavedRecipesFirestore`, `HealthProfileRepository`, `HealthProfileFirestore` | `RecipeBookScreen`, `SavedRecipesScreen`, `RecipeViewScreen` |
+| `statistics` | Membre 5 | `impact.dart` (meals saved, CO₂, score), `activity.dart` (action history), `nutrition_stats.dart`, `challenges.dart` | — (computed from the fridge history and donations) | `StatisticsScreen`, `ActivityHistoryScreen` |
 
 The biggest files are `list_screen.dart` (~1,200 lines) and `fridge_screen.dart` (~1,000 lines). `lib/` holds about 12,000 lines of Dart in total.
 
@@ -114,6 +114,7 @@ Each `*Firestore` class wraps one part of the database and holds top-level `xToM
 | `users/{userId}/shopping_lists/{listId}` | one document per list, items embedded as an array |
 | `users/{userId}/notifications/{id}` | donation events |
 | `users/{userId}/saved_recipes/{recipeId}` | favorite recipes (`savedAt`) |
+| `users/{userId}/health/profile` | health goal (`goal`, `updatedAt`) |
 | `donations/{donationId}` | shared between all users, requests embedded |
 
 `userId` comes from `CurrentUser.uid` ([lib/core/session/current_user.dart](lib/core/session/current_user.dart)): the signed-in account, bound by `SessionBinder`. Each repository has `connect()` and `clear()` so accounts never see each other data. Without a bound user (tests) it is the fixed `demo-user`.

@@ -27,6 +27,7 @@ class UserProfileFirestore {
     'shopping_lists',
     'notifications',
     'saved_recipes',
+    'health',
   ];
 
   /// Firestore allows at most 500 writes per batch.

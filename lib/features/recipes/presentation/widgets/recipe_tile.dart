@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../fridge/domain/recipes.dart';
+import '../../domain/nutrition.dart';
 import '../../domain/recipe_search.dart';
 
 const recipeGreen = Color(0xFF2E7D32);
@@ -16,6 +17,7 @@ class RecipeTile extends StatelessWidget {
     required this.isSaved,
     required this.onTap,
     required this.onToggleSaved,
+    this.fitsGoal = false,
   });
 
   final RecipeMatch match;
@@ -23,10 +25,14 @@ class RecipeTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onToggleSaved;
 
+  /// Shows a "Fits your goal" badge.
+  final bool fitsGoal;
+
   @override
   Widget build(BuildContext context) {
     final recipe = match.recipe;
     final used = match.used.values.map((food) => food.name).join(', ');
+    final health = healthOf(recipe);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
@@ -90,6 +96,16 @@ class RecipeTile extends StatelessWidget {
                               ? recipeGreen
                               : Colors.black54,
                         ),
+                        if (health != null)
+                          RecipeTag(
+                            label: '${health.kcal} kcal',
+                            color: const Color(0xFF00838F),
+                          ),
+                        if (fitsGoal)
+                          const RecipeTag(
+                            label: 'Fits your goal',
+                            color: recipeOrange,
+                          ),
                       ],
                     ),
                   ],

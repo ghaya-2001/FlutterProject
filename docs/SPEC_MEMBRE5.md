@@ -158,3 +158,47 @@ Conventions de l'équipe respectées : `domain/` sans Firebase ni widgets ; repo
 
 ## 7. Documentation
 Mettre à jour `TODO.md` (section Membre 5), `README.md` (section Membre 5 + table Firestore), `PROJECT_OVERVIEW.md` et `CLAUDE.md`.
+
+## 8. Bonus : Healthy lifestyle (suggéré par le professeur)
+
+### 8.1 Calories et macros par recette (`recipes/domain/nutrition.dart`)
+- `recipeHealth` : pour chacune des 28 recettes, valeurs approximatives **par portion** : kcal, protéines, glucides, lipides (g), végétarien, sans gluten.
+- Niveau : **Light** < 400 kcal ≤ **Balanced** < 500 kcal ≤ **Rich**.
+- Répartition de l'énergie : protéines × 4, glucides × 4, lipides × 9 kcal/g.
+- Affiché dans le détail d'une recette (carte « Nutrition » : kcal, niveau, barre des macros, tags) et sur chaque carte (« 390 kcal »).
+
+### 8.2 Tags santé et filtres
+- Tags : *Vegetarian* et *Gluten free* (selon les ingrédients), *Low calorie* (< 400 kcal) et *High protein* (≥ 20 g), calculés à partir des chiffres.
+- Nouveaux filtres de l'écran Recipes : Vegetarian, High protein, Low calorie, Gluten free.
+
+### 8.3 Objectif santé (`recipes/domain/health_goal.dart`)
+| Objectif | Recettes adaptées |
+| --- | --- |
+| No goal | aucune (classement uniquement par le frigo) |
+| Lose weight | < 400 kcal |
+| Stay balanced | 300–600 kcal et ≥ 12 g de protéines |
+| Build muscle | ≥ 20 g de protéines |
+- Choisi dans Profile → *Health goal*, depuis la bannière de l'écran Recipes ou depuis Statistics.
+- Les recettes adaptées passent en premier dans « Suggested for you » (`rankForGoal`, ordre conservé sinon) et portent le badge « Fits your goal ».
+- Stocké dans `users/{uid}/health/profile` : `goal` (nom de l'enum), `updatedAt`. Repository : `HealthProfileRepository` (instance, `connect`/`clear` via `SessionBinder`, rôle user seulement). `health` est ajouté à `UserProfileFirestore.userCollections`.
+
+### 8.4 Suivi dans Statistics (`statistics/domain/nutrition_stats.dart`)
+- Un repas cuisiné = un « I cooked it » : les événements du frigo d'une même recette à moins d'1 minute d'écart forment **un** repas (1 portion). La recette est retrouvée par son nom (`recipeByName`).
+- Sur la période choisie : kcal totales, nombre de repas, kcal moyennes par repas, barre et total des macros, nombre de repas adaptés à l'objectif.
+- Jamais stocké : recalculé à partir de `fridge_history`.
+
+### 8.5 Défis healthy de la semaine (`statistics/domain/challenges.dart`)
+Calculés sur les 7 derniers jours, jamais stockés :
+| Défi | Objectif |
+| --- | --- |
+| Veggie week | cuisiner 3 recettes végétariennes |
+| Protein power | cuisiner 2 recettes riches en protéines |
+| Light & tasty | cuisiner 3 repas < 400 kcal |
+| Home chef | cuisiner 5 recettes |
+| Zero waste | sauver 5 aliments sans rien jeter (remis à 0 dès qu'un aliment est jeté) |
+- Affichés dans Statistics → *Weekly challenges* avec barre de progression, trophée et compteur « x/5 done ».
+
+### 8.6 Tests
+- `test/features/recipes/nutrition_test.dart`, `health_profile_repository_test.dart`, `health_screens_test.dart`.
+- `test/features/statistics/nutrition_stats_test.dart` (repas, totaux, périodes, défis).
+- `session_binder_test.dart` : la déconnexion oublie l'objectif. `firestore-tests/rules.test.js` : `health/profile` privé au propriétaire.

@@ -4,10 +4,13 @@ import '../../../shared/widgets/screen_header.dart';
 import '../../fridge/data/fridge_repository.dart';
 import '../../fridge/domain/recipes.dart';
 import '../../list/data/shopping_list_repository.dart';
+import '../data/health_profile_repository.dart';
 import '../data/saved_recipes_repository.dart';
+import '../domain/health_goal.dart';
 import '../domain/recipe_search.dart';
 import 'recipe_view_screen.dart';
 import 'saved_recipes_screen.dart';
+import 'widgets/health_widgets.dart';
 import 'widgets/recipe_tile.dart';
 
 /// "Recipes" screen (Membre 5): every recipe of the app matched against the
@@ -18,12 +21,14 @@ class RecipeBookScreen extends StatefulWidget {
     this.fridge,
     this.savedRecipes,
     this.shopping,
+    this.healthProfile,
   });
 
   /// Default to the app-wide instances; injectable for tests.
   final FridgeRepository? fridge;
   final SavedRecipesRepository? savedRecipes;
   final ShoppingListRepository? shopping;
+  final HealthProfileRepository? healthProfile;
 
   @override
   State<RecipeBookScreen> createState() => _RecipeBookScreenState();
@@ -37,6 +42,8 @@ class _RecipeBookScreenState extends State<RecipeBookScreen> {
   FridgeRepository get _fridge => widget.fridge ?? FridgeRepository.instance;
   SavedRecipesRepository get _saved =>
       widget.savedRecipes ?? SavedRecipesRepository.instance;
+  HealthProfileRepository get _health =>
+      widget.healthProfile ?? HealthProfileRepository.instance;
 
   @override
   void dispose() {
@@ -52,6 +59,7 @@ class _RecipeBookScreenState extends State<RecipeBookScreen> {
           fridge: _fridge,
           savedRecipes: _saved,
           shopping: widget.shopping,
+          healthProfile: _health,
         ),
       ),
     );
@@ -84,13 +92,18 @@ class _RecipeBookScreenState extends State<RecipeBookScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: Listenable.merge([_fridge, _saved]),
+          listenable: Listenable.merge([_fridge, _saved, _health]),
           builder: (context, _) {
             final all = matchAllRecipes(_fridge.items, _fridge.now);
             final results = searchRecipes(all, query: _query, filter: _filter);
             final showSuggestions =
                 _query.trim().isEmpty && _filter == RecipeFilter.all;
-            final suggestions = all.where(usesFridge).take(3).toList();
+            final goal = _health.goal;
+            final suggestions = rankForGoal(
+              all.where(usesFridge),
+              goal,
+              (match) => match.recipe,
+            ).take(3).toList();
             final rest = showSuggestions
                 ? results.where((m) => !suggestions.contains(m)).toList()
                 : results;
@@ -119,7 +132,12 @@ class _RecipeBookScreenState extends State<RecipeBookScreen> {
                     style: const TextStyle(fontSize: 14, color: Colors.black54),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                _GoalBanner(
+                  goal: goal,
+                  onTap: () => showHealthGoalPicker(context, _health),
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   key: const ValueKey('recipes-search-field'),
                   controller: _searchController,
@@ -197,6 +215,51 @@ class _RecipeBookScreenState extends State<RecipeBookScreen> {
         isSaved: _saved.isSaved(match.recipe.id),
         onTap: () => _open(match.recipe.id),
         onToggleSaved: () => _toggleSaved(match),
+        fitsGoal: _health.goal.fitsRecipe(match.recipe),
+      ),
+    );
+  }
+}
+
+/// Current health goal; tapping it opens the goal picker.
+class _GoalBanner extends StatelessWidget {
+  const _GoalBanner({required this.goal, required this.onTap});
+
+  final HealthGoal goal;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasGoal = goal != HealthGoal.none;
+    return Material(
+      color: const Color(0xFFE8F5E9),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        key: const ValueKey('recipes-goal-banner'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.track_changes_rounded, color: recipeGreen),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  hasGoal
+                      ? 'Goal: ${goal.label} · ${goal.description}'
+                      : 'Set a health goal to get matching suggestions',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: recipeDark,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: recipeGreen),
+            ],
+          ),
+        ),
       ),
     );
   }

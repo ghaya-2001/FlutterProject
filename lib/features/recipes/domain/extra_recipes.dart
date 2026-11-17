@@ -17,6 +17,16 @@ Recipe? recipeById(String id) {
   return null;
 }
 
+/// Recipe with this name (fridge events store the recipe name), or null.
+Recipe? recipeByName(String name) {
+  for (final recipe in allRecipes) {
+    if (recipe.name == name) {
+      return recipe;
+    }
+  }
+  return null;
+}
+
 // -----------------------------------------------------------------------------
 // Ingredients
 // -----------------------------------------------------------------------------

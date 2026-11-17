@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/screen_header.dart';
 import '../../donations/data/donation_repository.dart';
 import '../../fridge/data/fridge_repository.dart';
+import '../../recipes/data/health_profile_repository.dart';
 import '../../recipes/data/saved_recipes_repository.dart';
+import '../../recipes/domain/health_goal.dart';
+import '../../recipes/presentation/widgets/health_widgets.dart';
 import '../domain/activity.dart';
+import '../domain/challenges.dart';
 import '../domain/impact.dart';
+import '../domain/nutrition_stats.dart';
 import 'activity_history_screen.dart';
 import 'widgets/activity_tile.dart';
 
@@ -15,19 +20,21 @@ const _dark = Color(0xFF1B1B1B);
 const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /// "Statistics" screen (Membre 5): meals saved, environmental impact,
-/// anti-waste score and recent actions.
+/// anti-waste score, healthy eating, weekly challenges and recent actions.
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({
     super.key,
     this.fridge,
     this.donations,
     this.savedRecipes,
+    this.healthProfile,
   });
 
   /// Default to the app-wide instances; injectable for tests.
   final FridgeRepository? fridge;
   final DonationRepository? donations;
   final SavedRecipesRepository? savedRecipes;
+  final HealthProfileRepository? healthProfile;
 
   @override
   State<StatisticsScreen> createState() => _StatisticsScreenState();
@@ -41,13 +48,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       widget.donations ?? DonationRepository.instance;
   SavedRecipesRepository get _saved =>
       widget.savedRecipes ?? SavedRecipesRepository.instance;
+  HealthProfileRepository get _health =>
+      widget.healthProfile ?? HealthProfileRepository.instance;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: Listenable.merge([_fridge, _donations, _saved]),
+          listenable: Listenable.merge([
+            _fridge,
+            _donations,
+            _saved,
+            _health,
+          ]),
           builder: (context, _) {
             final stats = ImpactStats.from(
               history: _fridge.history,
@@ -55,6 +69,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               now: _fridge.now,
               period: _period,
             );
+            final nutrition = NutritionStats.from(
+              history: _fridge.history,
+              now: _fridge.now,
+              period: _period,
+            );
+            final challenges = weeklyChallenges(
+              history: _fridge.history,
+              donations: _donations.donations,
+              now: _fridge.now,
+            );
+            final done = challenges.where((c) => c.isDone).length;
             final activity = buildActivity(
               history: _fridge.history,
               donations: _donations.donations,
@@ -135,6 +160,45 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 const SectionTitle('Where your savings come from'),
                 _Breakdown(stats: stats),
                 SectionTitle(
+                  'Healthy eating',
+                  trailing: TextButton(
+                    key: const ValueKey('stats-goal'),
+                    onPressed: () => showHealthGoalPicker(context, _health),
+                    child: Text(
+                      _health.goal == HealthGoal.none
+                          ? 'Set a goal'
+                          : _health.goal.label,
+                      style: const TextStyle(
+                        color: _green,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                _NutritionCard(stats: nutrition, goal: _health.goal),
+                SectionTitle(
+                  'Weekly challenges',
+                  trailing: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                      '$done/${challenges.length} done',
+                      key: const ValueKey('stats-challenges-done'),
+                      style: const TextStyle(
+                        color: _green,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                _Card(
+                  child: Column(
+                    children: [
+                      for (final challenge in challenges)
+                        _ChallengeRow(challenge: challenge),
+                    ],
+                  ),
+                ),
+                SectionTitle(
                   'Recent activity',
                   trailing: TextButton(
                     key: const ValueKey('stats-see-all'),
@@ -205,6 +269,190 @@ class _Card extends StatelessWidget {
         ],
       ),
       child: child,
+    );
+  }
+}
+
+/// Calories and macros of the meals cooked over the period.
+class _NutritionCard extends StatelessWidget {
+  const _NutritionCard({required this.stats, required this.goal});
+
+  final NutritionStats stats;
+  final HealthGoal goal;
+
+  @override
+  Widget build(BuildContext context) {
+    if (stats.isEmpty) {
+      return const EmptyCard(
+        icon: Icons.restaurant_rounded,
+        message:
+            'No meal cooked in this period. Tap "I cooked it" on a recipe '
+            'to follow your calories here.',
+      );
+    }
+    final total = stats.total;
+    final meals = stats.mealCount;
+    return _Card(
+      child: Column(
+        key: const ValueKey('stats-nutrition'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _NutritionFigure(
+                  key: const ValueKey('stats-kcal'),
+                  value: '${total.kcal}',
+                  label: 'kcal cooked',
+                ),
+              ),
+              Expanded(
+                child: _NutritionFigure(
+                  value: '$meals',
+                  label: meals == 1 ? 'meal' : 'meals',
+                ),
+              ),
+              Expanded(
+                child: _NutritionFigure(
+                  value: '${stats.averageKcal}',
+                  label: 'kcal / meal',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          MacroBar(nutrition: total, height: 12),
+          const SizedBox(height: 12),
+          MacroLegend(nutrition: total),
+          if (goal != HealthGoal.none) ...[
+            const SizedBox(height: 14),
+            Text(
+              '${stats.countGoal(goal)} of $meals '
+              '${meals == 1 ? 'meal fits' : 'meals fit'} your goal '
+              '(${goal.label.toLowerCase()})',
+              key: const ValueKey('stats-goal-meals'),
+              style: const TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _NutritionFigure extends StatelessWidget {
+  const _NutritionFigure({super.key, required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: _dark,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+      ],
+    );
+  }
+}
+
+const _challengeIcons = <ChallengeKind, IconData>{
+  ChallengeKind.veggie: Icons.eco_rounded,
+  ChallengeKind.protein: Icons.fitness_center_rounded,
+  ChallengeKind.light: Icons.spa_rounded,
+  ChallengeKind.homeChef: Icons.soup_kitchen_rounded,
+  ChallengeKind.zeroWaste: Icons.recycling_rounded,
+};
+
+/// One weekly challenge with its progress bar.
+class _ChallengeRow extends StatelessWidget {
+  const _ChallengeRow({required this.challenge});
+
+  final HealthChallenge challenge;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = challenge.isDone;
+    return Padding(
+      key: ValueKey('stats-challenge-${challenge.kind.name}'),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: done ? const Color(0xFFFFE082) : const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              done
+                  ? Icons.emoji_events_rounded
+                  : _challengeIcons[challenge.kind],
+              color: done ? const Color(0xFFE65100) : _green,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        challenge.title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: _dark,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      done
+                          ? 'Done!'
+                          : '${challenge.progress}/${challenge.target}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: done ? const Color(0xFFE65100) : _green,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  challenge.description,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: challenge.ratio,
+                    minHeight: 6,
+                    backgroundColor: const Color(0xFFE8F5E9),
+                    color: done ? const Color(0xFFFFA000) : _green,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -157,10 +157,10 @@ Code: `lib/features/recipes/`, `lib/features/statistics/`, `lib/features/home/` 
 
 | Folder | Content |
 | --- | --- |
-| `recipes/domain/` | `extra_recipes.dart` (16 recipes + `allRecipes` = 28 with the fridge book), `recipe_search.dart` (matching, search, filters), `SavedRecipe` |
-| `recipes/data/` | `SavedRecipesRepository` (ChangeNotifier), `SavedRecipesFirestore` |
+| `recipes/domain/` | `extra_recipes.dart` (16 recipes + `allRecipes` = 28 with the fridge book), `recipe_search.dart` (matching, search, filters), `SavedRecipe`, `nutrition.dart` (kcal, macros, health tags), `health_goal.dart` |
+| `recipes/data/` | `SavedRecipesRepository` (ChangeNotifier), `SavedRecipesFirestore`, `HealthProfileRepository`, `HealthProfileFirestore` |
 | `recipes/presentation/` | `RecipeBookScreen` (Recipes), `SavedRecipesScreen`, `RecipeViewScreen` (details), `RecipeTile` |
-| `statistics/domain/` | `impact.dart` (weights, meals saved, CO₂, score, periods), `activity.dart` (action history) |
+| `statistics/domain/` | `impact.dart` (weights, meals saved, CO₂, score, periods), `activity.dart` (action history), `nutrition_stats.dart` (calories of cooked meals), `challenges.dart` (weekly challenges) |
 | `statistics/presentation/` | `StatisticsScreen`, `ActivityHistoryScreen` |
 | `home/presentation/` | `FoodSaverHomePage` (Home Dashboard) |
 
@@ -173,6 +173,7 @@ Code: `lib/features/recipes/`, `lib/features/statistics/`, `lib/features/home/` 
 | Tableau de bord principal | Home: greeting with the first name, meals saved this week, Fridge / Recipes / Donations / Assistant, Your impact, Expiring soon, recipe idea |
 | Calcul des repas sauvés | Saved food = eaten, cooked, or donated and collected; 1 meal ≈ 400 g |
 | Calcul de l'impact environnemental | CO₂ avoided = saved kg × factor of the category (e.g. 0.8 vegetables, 15 meat & fish), car km equivalent (120 g/km) |
+| Bonus: healthy lifestyle | kcal and macros per recipe, health tags and filters, health goal (Profile) ranking the suggestions, calories of cooked meals and weekly challenges in Statistics |
 | Statistiques utilisateur | Home → Food saved card, or Statistics: week / month / all time, score, last 7 days chart, breakdown |
 | Historique des actions | Statistics → Recent activity → See all: grouped by day, with filters |
 
@@ -192,6 +193,7 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 | `users/{userId}/shopping_lists/{listId}` | `name`, `createdAt`, `items: [...]` | `lib/features/list/data/shopping_list_firestore.dart` |
 | `users/{userId}/notifications/{id}` | donation events: `type`, `title`, `body`, `donationId`, `createdAt` | `lib/features/notifications/data/notification_firestore.dart` |
 | `users/{userId}/saved_recipes/{recipeId}` | favorite recipes: `savedAt` (the recipe itself comes from the app) | `lib/features/recipes/data/saved_recipes_firestore.dart` |
+| `users/{userId}/health/profile` | health goal: `goal`, `updatedAt` | `lib/features/recipes/data/health_profile_firestore.dart` |
 | `donations/{donationId}` | `donorId`, `foodName`, `category`, `quantity`, `unit`, `expiryDate`, `status`, `requests: [...]` | `lib/features/donations/data/donation_firestore.dart` |
 
 - Every module reads and writes under the signed-in uid (`CurrentUser.uid`, `lib/core/session/current_user.dart`). `SessionBinder` empties and reloads the repositories when the account changes. Without Firebase (tests) the fixed `demo-user` is used.
