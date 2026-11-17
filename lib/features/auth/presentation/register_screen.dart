@@ -195,6 +195,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onSubmitted: (_) => _submit(),
                   ),
                 ),
+                const SizedBox(height: 12),
+                PasswordChecklist(
+                  password: _passwordController,
+                  confirmation: _confirmController,
+                ),
                 const SizedBox(height: 28),
                 FormError(_error),
                 PrimaryButton(

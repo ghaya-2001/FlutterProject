@@ -33,7 +33,7 @@ After the Membre 2 donation goals (2026-11-17, `feature/m2-donation-goals`): ana
 - [x] `auth/data/auth_firebase.dart`: `AuthFirebase` wraps `FirebaseAuth` and throws `AuthFailure` instead of Firebase exceptions
 - [x] `auth/data/auth_repository.dart`: `AuthRepository` (`ChangeNotifier` singleton, in-memory accounts when there is no Firebase) with `currentUser`, `isLoading`, `signUp`, `signIn`, `sendPasswordReset`, `sendEmailVerification`, `reloadUser`, `updateDisplayName`, `reauthenticate`, `changePassword`, `deleteAccount`, `signOut`
 - [x] `auth/domain/auth_failure.dart`: Firebase error codes → English messages
-- [x] `auth/domain/auth_validators.dart`: email, password (≥ 6 characters, a letter and a number), confirmation and name validators for the forms
+- [x] `auth/domain/auth_validators.dart`: email, password (≥ 6 characters, a letter and a number; one `PasswordRule` each in `passwordRules`), confirmation and name validators for the forms
 - [x] `profile/data/user_profile_firestore.dart` + `user_profile_repository.dart`: profile in `users/{uid}` (`displayName`, `email`, `photo`, `createdAt`, `settings.notificationsEnabled`), merged with other modules' fields, created on first sign-in, follows sign-in/sign-out; `deleteUserData` for account deletion
 - [x] `profile/domain/user_profile.dart` + `user_settings.dart` models
 - [x] Tests: `test/features/auth/` + `test/features/profile/` (35 tests)
@@ -58,6 +58,9 @@ After the Membre 2 donation goals (2026-11-17, `feature/m2-donation-goals`): ana
 - [x] **Settings** (new), saved in `users/{uid}.settings`. The three items below go beyond the doc ("Paramètres utilisateur") on purpose:
   - [x] Notifications on/off, connected to `NotificationService.setEnabled` (cancel or re-schedule alerts)
   - [x] Change password (re-authenticate with the current password, then update)
+  - [x] 2026-11-17 (branch `feature/m1-password-change`): Change password is a full screen (`ChangePasswordScreen`): current password, new password twice, must differ from the current one; "Forgot your current password?" emails a reset link
+  - [x] 2026-11-17: live password checklist (`PasswordChecklist`) on Register and Change password; each rule is ticked while typing (6+ characters, a letter, a number, both fields match, and "different from current" on Change password)
+  - [ ] Verification code before changing the password: **not possible on the current setup**. Firebase Auth has no built-in email code; it needs Cloud Functions (Blaze plan) plus an email sender, or phone-number SMS codes (Blaze plan, phone linked to the account). Re-authentication with the current password plays this role for now
   - [x] Delete account (confirm + re-authenticate, delete the user's Firestore data, then the auth user)
 - [x] **Secure logout**
   - [x] Profile "Verify your email" banner (dismissible, Resend + refresh check, never blocks access)

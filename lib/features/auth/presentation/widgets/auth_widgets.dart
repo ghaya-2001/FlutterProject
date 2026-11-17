@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/auth_validators.dart';
+
 /// White rounded input used by every auth and profile form.
 InputDecoration authInputDecoration({
   required String label,
@@ -60,6 +62,121 @@ class _PasswordFieldState extends State<PasswordField> {
             _obscure ? Icons.visibility_off : Icons.visibility,
             color: const Color(0xFF2E7D32),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Live list of the [passwordRules] under a new-password field; each rule is
+/// ticked as soon as the typed [password] follows it.
+///
+/// With [currentPassword] it also checks that the new password is different
+/// (Change password); with [confirmation] it checks that both fields match.
+/// Rows are keyed `password-rule-<id>` (`different` and `match` for the two
+/// extra checks).
+class PasswordChecklist extends StatelessWidget {
+  const PasswordChecklist({
+    super.key,
+    required this.password,
+    this.confirmation,
+    this.currentPassword,
+  });
+
+  final TextEditingController password;
+  final TextEditingController? confirmation;
+  final TextEditingController? currentPassword;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = currentPassword;
+    final confirm = confirmation;
+    return ListenableBuilder(
+      listenable: Listenable.merge([password, current, confirm]),
+      builder: (context, _) {
+        final value = password.text;
+        return Container(
+          key: const ValueKey('password-checklist'),
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final rule in passwordRules)
+                _ChecklistRow(
+                  id: rule.id,
+                  label: rule.label,
+                  met: rule.isMetBy(value),
+                ),
+              if (current != null)
+                _ChecklistRow(
+                  id: 'different',
+                  label: 'Different from your current password',
+                  met: value.isNotEmpty && value != current.text,
+                ),
+              if (confirm != null)
+                _ChecklistRow(
+                  id: 'match',
+                  label: 'Both new passwords match',
+                  met: confirm.text.isNotEmpty && confirm.text == value,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ChecklistRow extends StatelessWidget {
+  const _ChecklistRow({
+    required this.id,
+    required this.label,
+    required this.met,
+  });
+
+  final String id;
+  final String label;
+  final bool met;
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF2E7D32);
+    return Semantics(
+      label: '$label: ${met ? 'done' : 'not yet'}',
+      excludeSemantics: true,
+      child: Padding(
+        key: ValueKey('password-rule-$id'),
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                met
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                key: ValueKey(met),
+                size: 20,
+                color: met ? green : Colors.black38,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: met ? green : Colors.black54,
+                  fontWeight: met ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
