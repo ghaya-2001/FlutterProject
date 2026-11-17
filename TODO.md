@@ -114,7 +114,8 @@ Reported done in the README (`lib/features/fridge/`), with Firestore sync and an
 - [x] Progress = sum of the contributions (appended with `arrayUnion`, no lost gift when two donors give at once); goal reached at 100 %, then closed to new gifts; also closed by its owner or after the deadline
 - [x] Fridge food details: "<Charity> needs …" banner with a Give button
 - [x] Restaurants follow their goals live (donors, latest gift), close or delete them; the admin sees every goal
-- [x] `firestore.rules` for `donation_goals` + emulator tests (`firestore-tests/rules.test.js`) — **run `npm test` there once** (needs Java + Firebase CLI)
+- [x] Goals stored in `users/shared/donation_goals`: the deployed development rules refuse a new top-level collection (checked 2026-11-17)
+- [x] `firestore.rules` for `users/shared/donation_goals` + emulator tests (`firestore-tests/rules.test.js`) — **run `npm test` there once** (needs Java + Firebase CLI)
 - [x] Account deletion closes the goals of a restaurant (`UserProfileFirestore.deleteUserData`)
 - [x] Demo data: `dart run tool/seed_demo_goals.dart` (5 demo accounts, Khaoula's fridge + history, 5 goals)
 - [ ] Optional: notify the restaurant when a goal is reached; add the received food to the restaurant's Stock

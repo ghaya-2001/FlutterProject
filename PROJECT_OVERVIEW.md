@@ -117,7 +117,7 @@ Each `*Firestore` class wraps one part of the database and holds top-level `xToM
 | `users/{userId}/saved_recipes/{recipeId}` | favorite recipes (`savedAt`) |
 | `users/{userId}/health/profile` | health goal (`goal`, `updatedAt`) |
 | `donations/{donationId}` | shared between all users, requests embedded |
-| `donation_goals/{goalId}` | needs of restaurants and charities, contributions embedded (appended with `arrayUnion`), listened to in real time |
+| `users/shared/donation_goals/{goalId}` | needs of restaurants and charities (shared by every account; under `users/` because the deployed rules only open `users/` and `donations/`), contributions embedded (appended with `arrayUnion`), listened to in real time |
 
 `userId` comes from `CurrentUser.uid` ([lib/core/session/current_user.dart](lib/core/session/current_user.dart)): the signed-in account, bound by `SessionBinder`. Each repository has `connect()` and `clear()` so accounts never see each other data. Without a bound user (tests) it is the fixed `demo-user`.
 

@@ -92,7 +92,9 @@ service cloud.firestore {
     // Donation goals (Membre 2): a restaurant or charity says what it needs
     // ("10 kg of rice"), users give until the target is reached. The progress
     // is the sum of the contributions, which are only ever appended.
-    match /donation_goals/{goalId} {
+    // Stored under users/shared/ because the deployed development rules only
+    // open users/... and donations/... (no user has the uid "shared").
+    match /users/shared/donation_goals/{goalId} {
       allow read: if signedIn();
 
       // Only restaurants publish, in their own name, before any gift.

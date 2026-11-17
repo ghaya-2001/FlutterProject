@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/user_profile.dart';
 import '../domain/user_role.dart';
 import '../domain/user_settings.dart';
+import '../../goals/data/goal_firestore.dart';
 
 /// Reads and writes the user's profile in Firestore.
 ///
@@ -97,7 +98,7 @@ class UserProfileFirestore {
     // Goals of a restaurant: closed rather than deleted, so the gifts donors
     // already made stay in their history (Membre 2).
     final goals = await _db
-        .collection('donation_goals')
+        .collection(donationGoalsPath)
         .where('restaurantId', isEqualTo: uid)
         .get();
     for (final goal in goals.docs) {
