@@ -7,8 +7,15 @@ import '../../donations/data/donation_repository.dart';
 import '../../donations/presentation/donation_history_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../list/data/shopping_list_repository.dart';
+import '../../fridge/data/fridge_repository.dart';
 import '../../fridge/presentation/fridge_screen.dart';
 import '../../list/presentation/list_screen.dart';
+import '../../recipes/data/health_profile_repository.dart';
+import '../../recipes/data/saved_recipes_repository.dart';
+import '../../recipes/domain/health_goal.dart';
+import '../../recipes/presentation/saved_recipes_screen.dart';
+import '../../recipes/presentation/widgets/health_widgets.dart';
+import '../../statistics/domain/impact.dart';
 import '../data/user_profile_repository.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
@@ -153,31 +160,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 22),
-          Row(
-            children: const [
-              Expanded(
-                child: _ProfileStatCard(
-                  value: '128',
-                  label: 'Meals saved',
-                  color: Color(0xFFB2DFDB),
-                ),
-              ),
-              SizedBox(width: 14),
-              Expanded(
-                child: _ProfileStatCard(
-                  value: '92%',
-                  label: 'Impact',
-                  color: Color(0xFFFFE082),
-                ),
-              ),
-            ],
+          // Membre 5: computed from the fridge history and the donations.
+          ListenableBuilder(
+            listenable: Listenable.merge([
+              FridgeRepository.instance,
+              DonationRepository.instance,
+            ]),
+            builder: (context, _) {
+              final stats = ImpactStats.from(
+                history: FridgeRepository.instance.history,
+                donations: DonationRepository.instance.donations,
+                now: FridgeRepository.instance.now,
+              );
+              return Row(
+                children: [
+                  Expanded(
+                    child: _ProfileStatCard(
+                      key: const ValueKey('profile-meals-saved'),
+                      value: '${stats.mealsSaved}',
+                      label: 'Meals saved',
+                      color: const Color(0xFFB2DFDB),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _ProfileStatCard(
+                      key: const ValueKey('profile-impact'),
+                      value: stats.score == null ? '—' : '${stats.score}%',
+                      label: 'Impact',
+                      color: const Color(0xFFFFE082),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 24),
-          _ProfileOptionRow(
-            icon: Icons.favorite_rounded,
-            title: 'Saved recipes',
-            subtitle: '18 favorites',
-            onTap: () {},
+          ListenableBuilder(
+            listenable: SavedRecipesRepository.instance,
+            builder: (context, _) {
+              final count = SavedRecipesRepository.instance.count;
+              return _ProfileOptionRow(
+                icon: Icons.favorite_rounded,
+                title: 'Saved recipes',
+                subtitle: '$count ${count == 1 ? 'favorite' : 'favorites'}',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const SavedRecipesScreen(),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          // Membre 5: the goal ranks the recipe suggestions.
+          ListenableBuilder(
+            listenable: HealthProfileRepository.instance,
+            builder: (context, _) {
+              final goal = HealthProfileRepository.instance.goal;
+              return _ProfileOptionRow(
+                key: const ValueKey('profile-health-goal'),
+                icon: Icons.track_changes_rounded,
+                title: 'Health goal',
+                subtitle: goal == HealthGoal.none
+                    ? 'Choose a goal for your recipes'
+                    : goal.label,
+                onTap: () => showHealthGoalPicker(
+                  context,
+                  HealthProfileRepository.instance,
+                ),
+              );
+            },
           ),
           const SizedBox(height: 12),
           _ProfileOptionRow(
@@ -343,6 +396,7 @@ class _VerifyEmailBanner extends StatelessWidget {
 
 class _ProfileStatCard extends StatelessWidget {
   const _ProfileStatCard({
+    super.key,
     required this.value,
     required this.label,
     required this.color,
@@ -394,6 +448,7 @@ class _ProfileStatCard extends StatelessWidget {
 
 class _ProfileOptionRow extends StatelessWidget {
   const _ProfileOptionRow({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,

@@ -8,6 +8,9 @@ import 'package:foodsaver/features/list/data/shopping_list_repository.dart';
 import 'package:foodsaver/features/notifications/data/notification_repository.dart';
 import 'package:foodsaver/features/profile/data/user_profile_repository.dart';
 import 'package:foodsaver/features/profile/domain/user_role.dart';
+import 'package:foodsaver/features/recipes/data/health_profile_repository.dart';
+import 'package:foodsaver/features/recipes/data/saved_recipes_repository.dart';
+import 'package:foodsaver/features/recipes/domain/health_goal.dart';
 
 void main() {
   late AuthRepository auth;
@@ -15,6 +18,8 @@ void main() {
   late FridgeRepository fridge;
   late ShoppingListRepository shopping;
   late DonationRepository donations;
+  late SavedRecipesRepository savedRecipes;
+  late HealthProfileRepository healthProfile;
   late SessionBinder binder;
 
   setUp(() {
@@ -28,6 +33,8 @@ void main() {
       fridge: fridge,
       notifications: notifications,
     );
+    savedRecipes = SavedRecipesRepository(clock: () => now);
+    healthProfile = HealthProfileRepository(clock: () => now);
     binder = SessionBinder(
       auth: auth,
       profiles: profiles,
@@ -35,6 +42,8 @@ void main() {
       shopping: shopping,
       notifications: notifications,
       donations: donations,
+      savedRecipes: savedRecipes,
+      healthProfile: healthProfile,
     );
   });
 
@@ -73,6 +82,23 @@ void main() {
     expect(fridge.items, isEmpty);
     expect(shopping.lists, isEmpty);
     expect(donations.donations, isEmpty);
+  });
+
+  test('logout forgets the saved recipes (Membre 5)', () async {
+    await signUp('a@example.com');
+    savedRecipes.save('shakshuka');
+    expect(savedRecipes.count, 1);
+
+    await auth.signOut();
+    expect(savedRecipes.saved, isEmpty);
+  });
+
+  test('logout forgets the health goal (Membre 5)', () async {
+    await signUp('a@example.com');
+    healthProfile.setGoal(HealthGoal.buildMuscle);
+
+    await auth.signOut();
+    expect(healthProfile.goal, HealthGoal.none);
   });
 
   test('a second account does not keep the first one\'s changes', () async {

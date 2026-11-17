@@ -6,7 +6,7 @@ rules_version = '2';
 // A client can only create its profile as "user" or "restaurant" and can never
 // change the role afterwards. "admin" is set by hand in the Firebase console.
 //
-// Tested with the Firebase emulator: `cd firestore-tests && npm test` (27 tests).
+// Tested with the Firebase emulator: `cd firestore-tests && npm test` (29 tests).
 // NOT DEPLOYED yet. Do not deploy before:
 //  - every teammate's build uses the signed-in uid (no more "demo-user"), and
 //  - the donation screens follow the new flow (restaurants request, the admin

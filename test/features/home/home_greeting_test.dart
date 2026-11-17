@@ -22,7 +22,7 @@ void main() {
 
   Finder greeting() => find.byKey(const ValueKey('home-greeting-name'));
 
-  testWidgets('greets the signed-in user by name, not a placeholder', (
+  testWidgets('greets the signed-in user by first name, not a placeholder', (
     tester,
   ) async {
     await auth.signUp(
@@ -32,7 +32,7 @@ void main() {
     );
     await tester.pumpWidget(home());
 
-    expect(tester.widget<Text>(greeting()).data, 'Sami Trabelsi');
+    expect(tester.widget<Text>(greeting()).data, 'Sami');
     expect(find.text('Maya'), findsNothing);
   });
 
@@ -44,10 +44,10 @@ void main() {
     );
     await tester.pumpWidget(home());
 
-    await profiles.updateDisplayName('Sami T.');
+    await profiles.updateDisplayName('Samir T.');
     await tester.pump();
 
-    expect(tester.widget<Text>(greeting()).data, 'Sami T.');
+    expect(tester.widget<Text>(greeting()).data, 'Samir');
   });
 
   testWidgets('falls back to a neutral name when nobody is signed in', (
@@ -55,15 +55,15 @@ void main() {
   ) async {
     await tester.pumpWidget(home());
 
-    expect(tester.widget<Text>(greeting()).data, 'Food saver');
+    expect(tester.widget<Text>(greeting()).data, 'Welcome back');
   });
 
   testWidgets('the Fridge and Recipes quick actions open their screens', (
     tester,
   ) async {
     await tester.pumpWidget(home());
-    final fridge = find.byKey(const ValueKey('home-fridge-action'));
-    final recipes = find.byKey(const ValueKey('home-recipes-action'));
+    final fridge = find.byKey(const ValueKey('home-fridge-card'));
+    final recipes = find.byKey(const ValueKey('home-recipes-card'));
     await tester.ensureVisible(fridge);
 
     await tester.tap(fridge);
@@ -75,6 +75,6 @@ void main() {
     await tester.ensureVisible(recipes);
     await tester.tap(recipes);
     await tester.pumpAndSettle();
-    expect(find.text('Cook now'), findsOneWidget);
+    expect(find.text('Suggested for you'), findsOneWidget);
   });
 }

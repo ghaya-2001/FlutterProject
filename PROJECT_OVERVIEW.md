@@ -58,7 +58,7 @@ features/<feature>/
 | --- | --- | --- | --- | --- |
 | `welcome` | — | — | — | `WelcomeScreen` |
 | `auth` | Membre 1 | `AppUser`, `AuthFailure`, form validators | `AuthRepository`, `AuthFirebase` | `SplashScreen`, `LoginScreen`, `RegisterScreen`, `ResetPasswordScreen` (all use `AuthRepository`) |
-| `home` | — | — | — | `FoodSaverHomePage` (dashboard + bottom nav) |
+| `home` | Membre 5 | — | — | `FoodSaverHomePage` (dashboard with real data + bottom nav) |
 | `fridge` | Membre 2 | `FoodItem`, `FoodCategory`, `FridgeEvent`, `FridgeStats`, formatters | `FridgeRepository`, `FridgeFirestore` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
 | `donations` | Membre 3 | `Donation`, `DonationRequest`, `Beneficiary` | `DonationRepository`, `DonationFirestore` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen` |
 | `list` | Membre 4 | `ShoppingList`, `ShoppingItem`, `ShoppingCategory` | `ShoppingListRepository`, `ShoppingListFirestore` | `ListScreen`, `AddItemScreen` |
@@ -66,6 +66,8 @@ features/<feature>/
 | `notifications` | Membre 4 | `AppNotification` | `NotificationRepository`, `NotificationFirestore`, `NotificationService` | `NotificationsScreen` |
 | `chatbot` | Membre 4 | `chatbot_engine.dart` (predefined questions + keyword matching) | — | `ChatbotScreen` |
 | `profile` | Membre 1 | `UserProfile`, `UserSettings` | `UserProfileRepository`, `UserProfileFirestore` | `ProfileScreen` |
+| `recipes` | Membre 5 | `allRecipes` (fridge book + extra recipes), `recipe_search.dart`, `SavedRecipe`, `nutrition.dart`, `health_goal.dart` | `SavedRecipesRepository`, `SavedRecipesFirestore`, `HealthProfileRepository`, `HealthProfileFirestore` | `RecipeBookScreen`, `SavedRecipesScreen`, `RecipeViewScreen` |
+| `statistics` | Membre 5 | `impact.dart` (meals saved, CO₂, score), `activity.dart` (action history), `nutrition_stats.dart`, `challenges.dart` | — (computed from the fridge history and donations) | `StatisticsScreen`, `ActivityHistoryScreen` |
 
 The biggest files are `list_screen.dart` (~1,200 lines) and `fridge_screen.dart` (~1,000 lines). `lib/` holds about 12,000 lines of Dart in total.
 
@@ -111,6 +113,8 @@ Each `*Firestore` class wraps one part of the database and holds top-level `xToM
 | `users/{userId}/fridge_history/{id}` | consumed / wasted events (stats) |
 | `users/{userId}/shopping_lists/{listId}` | one document per list, items embedded as an array |
 | `users/{userId}/notifications/{id}` | donation events |
+| `users/{userId}/saved_recipes/{recipeId}` | favorite recipes (`savedAt`) |
+| `users/{userId}/health/profile` | health goal (`goal`, `updatedAt`) |
 | `donations/{donationId}` | shared between all users, requests embedded |
 
 `userId` comes from `CurrentUser.uid` ([lib/core/session/current_user.dart](lib/core/session/current_user.dart)): the signed-in account, bound by `SessionBinder`. Each repository has `connect()` and `clear()` so accounts never see each other data. Without a bound user (tests) it is the fixed `demo-user`.
@@ -128,7 +132,7 @@ Each `*Firestore` class wraps one part of the database and holds top-level `xToM
 DonationRepository ──► NotificationRepository ──► pushHandler ──► NotificationService.showNow
 ```
 
-Expiry alerts are never stored. They are recalculated from `FoodItem.expiryDate` each time.
+Expiry alerts are never stored. They are recalculated from `FoodItem.expiryDate` each time. The same goes for the statistics of Membre 5 (`statistics/domain/impact.dart`): meals saved, CO₂ and the action history are recomputed from `fridge_history`, the donations and the saved recipes.
 
 ---
 
@@ -142,6 +146,8 @@ SplashScreen ──► WelcomeScreen ──"Get Started"──► LoginScreen �
                                                                                  │
      bottom NavigationBar: Home · Fridge · List · Profile                        │
      quick-action cards: Fridge, Recipes, Donations, Assistant                   │
+     Food saved / Your impact ──► StatisticsScreen ──► ActivityHistoryScreen     │
+     Recipes ──► RecipeBookScreen ──► RecipeViewScreen / SavedRecipesScreen      │
      bell icon (unread badge) ──► NotificationsScreen                            │
      "Expiring soon" card ──► ExpiringSoonScreen / FoodDetailsScreen ◄───────────┘
 ```
@@ -220,6 +226,9 @@ Screens use `ListenableBuilder(listenable: XRepository.instance, builder: ...)` 
 | `features/expiry/expiry_alerts_test.dart` | 7d / 3d / today / expired levels |
 | `features/notifications/*` | notification repository |
 | `features/chatbot/chatbot_test.dart` | keyword matching and replies |
+| `features/recipes/*` | recipe matching and search, saved recipes repository + mapping, Recipes / Saved / Details screens |
+| `features/statistics/*` | weights, meals saved, CO₂, score, periods, action history, Statistics screen |
+| `features/home/home_screen_test.dart` | dashboard with real data and its navigation |
 | `features/firestore_mapping_test.dart` | model ↔ map round-trips |
 
 Tests build repositories with `remote: null` and a fixed `clock`, so they don't need Firebase.
@@ -249,7 +258,7 @@ Android needs core library desugaring (already enabled in `android/app/build.gra
 
 - **Firestore rules are not deployed yet.** `firestore.rules` is the auth-based version with roles and is tested with the emulator (`firestore-tests/`, `npm test`), but deploying it breaks builds that still use `demo-user` and donor screens that accept requests. The rules in the Firebase project are still the open dev rules.
 - **Roles are new**: restaurants can browse and request donations (`RestaurantDonationsTab`); the admin `AdminRequestsTab` lists pending requests and accepts or refuses them (donor notification and mark-collected are not built). Restaurants also have a Stock tab (their own fridge) and, like the admin, a History tab (`RequestHistoryTab`); accepted donations are added to the restaurant's stock by `DonationStockReceiver`.
-- **Placeholder content** on Home and Profile: "12 meals protected", the "Fridge: 7 items" / "Recipes: 3 ideas" cards, "128 meals saved", "92% impact", "18 saved recipes". The Recipes feature does not exist yet.
+- The Home and Profile placeholders ("12 meals protected", "128 meals saved", "92%", "18 saved recipes"…) were replaced by real values by Membre 5. The impact figures are estimates (see `docs/SPEC_MEMBRE5.md` §2).
 - **Navigation is duplicated** in each tab screen's `NavigationBar`. Home *pushes* tab screens, so the back stack grows. A single shell with an `IndexedStack` would fix both.
 - **Colours are hard-coded** in every widget instead of read from the theme, so restyling or adding dark mode means editing many files.
 - Only restaurants request donations (Donations tab of their shell); users have no "Available" tab or request button, and `DonationRepository.requestDonation` refuses the donor's own id. `sampleBeneficiaries` remain only as seed/test data.

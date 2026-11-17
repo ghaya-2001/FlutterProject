@@ -151,7 +151,37 @@ Android: notifications need the `POST_NOTIFICATIONS` permission and core library
 
 Tests: `test/features/donations/`, `test/features/expiry/`, `test/features/notifications/`, `test/features/chatbot/`
 
-## Base de données — Firestore (Membres 2, 3 et 4)
+## Membre 5 — Recettes intelligentes et Tableau de bord (Recipes & Dashboard module)
+
+Code: `lib/features/recipes/`, `lib/features/statistics/`, `lib/features/home/` · Spec: [docs/SPEC_MEMBRE5.md](docs/SPEC_MEMBRE5.md)
+
+| Folder | Content |
+| --- | --- |
+| `recipes/domain/` | `extra_recipes.dart` (16 recipes + `allRecipes` = 28 with the fridge book), `recipe_search.dart` (matching, search, filters), `SavedRecipe`, `nutrition.dart` (kcal, macros, health tags), `health_goal.dart` |
+| `recipes/data/` | `SavedRecipesRepository` (ChangeNotifier), `SavedRecipesFirestore`, `HealthProfileRepository`, `HealthProfileFirestore` |
+| `recipes/presentation/` | `RecipeBookScreen` (Recipes), `SavedRecipesScreen`, `RecipeViewScreen` (details), `RecipeTile` |
+| `statistics/domain/` | `impact.dart` (weights, meals saved, CO₂, score, periods), `activity.dart` (action history), `nutrition_stats.dart` (calories of cooked meals), `challenges.dart` (weekly challenges) |
+| `statistics/presentation/` | `StatisticsScreen`, `ActivityHistoryScreen` |
+| `home/presentation/` | `FoodSaverHomePage` (Home Dashboard) |
+
+| Feature (cahier des charges) | Where |
+| --- | --- |
+| Suggestions de recettes selon les ingrédients disponibles | Recipes → "Suggested for you" (recipes saving the foods that expire soonest first); Home → "Cook before it expires" |
+| Recherche de recettes | Recipes search bar (recipe name or ingredient) + filters: Ready to cook, Uses my fridge, Quick (≤ 15 min) |
+| Sauvegarde des recettes favorites | Heart on every recipe card and in the recipe details |
+| Consultation des recettes enregistrées | Recipes → heart icon, Home → Your impact → saved recipes, or Profile → Saved recipes |
+| Tableau de bord principal | Home: greeting with the first name, meals saved this week, Fridge / Recipes / Donations / Assistant, Your impact, Expiring soon, recipe idea |
+| Calcul des repas sauvés | Saved food = eaten, cooked, or donated and collected; 1 meal ≈ 400 g |
+| Calcul de l'impact environnemental | CO₂ avoided = saved kg × factor of the category (e.g. 0.8 vegetables, 15 meat & fish), car km equivalent (120 g/km) |
+| Bonus: healthy lifestyle | kcal and macros per recipe, health tags and filters, health goal (Profile) ranking the suggestions, calories of cooked meals and weekly challenges in Statistics |
+| Statistiques utilisateur | Home → Food saved card, or Statistics: week / month / all time, score, last 7 days chart, breakdown |
+| Historique des actions | Statistics → Recent activity → See all: grouped by day, with filters |
+
+Statistics are never stored: they are recomputed from `fridge_history` and the donations. Recipe details also offer "Add missing to shopping list" (Membre 4) and "I cooked it" (recorded in the fridge history of Membre 2).
+
+Tests: `test/features/recipes/`, `test/features/statistics/`, `test/features/home/`
+
+## Base de données — Firestore (Membres 2, 3, 4 et 5)
 
 The fridge, shopping lists, donations and notifications are saved in **Cloud Firestore**.
 
@@ -162,6 +192,8 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 | `users/{userId}/fridge_history/{id}` | `type` (consumed / wasted), `foodName`, `category`, `quantity`, `unit`, `at`, `daysLeft`, `recipe` | `lib/features/fridge/data/fridge_firestore.dart` |
 | `users/{userId}/shopping_lists/{listId}` | `name`, `createdAt`, `items: [...]` | `lib/features/list/data/shopping_list_firestore.dart` |
 | `users/{userId}/notifications/{id}` | donation events: `type`, `title`, `body`, `donationId`, `createdAt` | `lib/features/notifications/data/notification_firestore.dart` |
+| `users/{userId}/saved_recipes/{recipeId}` | favorite recipes: `savedAt` (the recipe itself comes from the app) | `lib/features/recipes/data/saved_recipes_firestore.dart` |
+| `users/{userId}/health/profile` | health goal: `goal`, `updatedAt` | `lib/features/recipes/data/health_profile_firestore.dart` |
 | `donations/{donationId}` | `donorId`, `foodName`, `category`, `quantity`, `unit`, `expiryDate`, `status`, `requests: [...]` | `lib/features/donations/data/donation_firestore.dart` |
 
 - Every module reads and writes under the signed-in uid (`CurrentUser.uid`, `lib/core/session/current_user.dart`). `SessionBinder` empties and reloads the repositories when the account changes. Without Firebase (tests) the fixed `demo-user` is used.

@@ -13,6 +13,8 @@ After Phase 0 (`feature/m1-auth-profile`): analyze clean · 129 passed, the same
 After Phase 1 (2026-11-12): analyze clean · **166 passed, 0 failed** (the 3 list tests were fixed on `main` by Membre 2).
 After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 After business-name editing (2026-11-13): analyze clean · **191 passed, 0 failed** · 27 rules tests.
+After Membre 5 recipes + dashboard (2026-11-13, `feature/m5-recipes-dashboard`): analyze clean · **248 passed, 0 failed** · 28 rules tests.
+After the Membre 5 healthy-lifestyle bonus (2026-11-16): analyze clean · **277 passed, 0 failed** · 29 rules tests.
 
 ---
 
@@ -51,7 +53,7 @@ After business-name editing (2026-11-13): analyze clean · **191 passed, 0 faile
   - [x] Fix the bottom-bar Fridge tab (index 1 has no handler)
 - [x] **Edit profile** (new screen): change display name and photo only (no email change; password change lives in Settings)
 - [x] **Profile photo**: gallery/camera, compressed, saved in `users/{uid}.photo`, shown on Profile
-  - [ ] Show it on the Home header too (Home belongs to Membre 5; coordinate)
+  - [ ] Show it on the Home header too (Home belongs to Membre 5; the greeting uses the name, the photo is not shown yet)
 - [x] **Settings** (new), saved in `users/{uid}.settings`. The three items below go beyond the doc ("Paramètres utilisateur") on purpose:
   - [x] Notifications on/off, connected to `NotificationService.setEnabled` (cancel or re-schedule alerts)
   - [x] Change password (re-authenticate with the current password, then update)
@@ -71,8 +73,8 @@ After business-name editing (2026-11-13): analyze clean · **191 passed, 0 faile
 - [x] Clear the other modules in-memory data on logout: done through `SessionBinder`; verified on a real device with two accounts (2026-11-13)
 - [x] Edit profile for restaurants: change the business name (`UserProfileRepository.updateBusinessName`, field shown to restaurants only)
 - [x] `NotificationService`: cancel/re-schedule hook (`setEnabled`, `cancelAll`; Membre 3: please review) for the Settings toggle, logout and delete account (Membre 3 owns it; add a method only if missing)
-- [ ] Profile stats ("128 meals saved / 92%") stay as placeholders for Membre 5
-- [x] Home header greeting uses the profile name (fixed 2026-11-14: `FoodSaverHomePage` reads `UserProfileRepository`, falling back to the auth name; Home belongs to Membre 5, only the greeting was touched). Tests: `test/features/home/home_greeting_test.dart`
+- [x] Profile stats ("128 meals saved / 92%") replaced by real values (done by Membre 5)
+- [x] Home header greeting uses the profile name, falling back to the auth name (greeting fixed by Membre 1 on 2026-11-14, Home dashboard by Membre 5). Tests: `test/features/home/home_greeting_test.dart`, `test/features/home/home_screen_test.dart`
 
 ### Phase 3 — Tests & docs
 - [x] `test/features/auth/`: auth repository with a fake remote, error mapping, form validation (done in Phase 0)
@@ -112,15 +114,26 @@ Reported done in the README (`lib/features/list/`).
 - [x] Screens: Shopping List, Add Item
 - [x] Fixed on `main` (the 3 `list_screen_test.dart` failures)
 
-## Membre 5 — Recipes & Dashboard
-- [ ] Recipe suggestions from the fridge ingredients
-- [ ] Recipe search
-- [ ] Save favorite recipes · view saved recipes
-- [~] Home Dashboard: layout exists; "Food saved", "Fridge 7 items" and "Recipes 3 ideas" are placeholders
-- [ ] Meals-saved calculation · environmental-impact calculation
-- [~] User statistics: the fridge anti-waste stats screen exists; Profile "128 meals saved / 92% impact" are placeholders
-- [~] Action history: fridge consumption/waste history exists (`fridge_history`)
-- [ ] Screens: Recipes, Saved Recipes, Statistics
+## Membre 5 — Recipes & Dashboard ✅ (2026-11-13, branch `feature/m5-recipes-dashboard`)
+Spec: [docs/SPEC_MEMBRE5.md](docs/SPEC_MEMBRE5.md). Code: `lib/features/recipes/`, `lib/features/statistics/`, `lib/features/home/`.
+- [x] Recipe suggestions from the fridge ingredients ("Suggested for you", reuses Membre 2's matching; 28 recipes = 12 fridge + 16 new)
+- [x] Recipe search (name or ingredient, accents ignored) + filters: ready to cook, uses my fridge, quick
+- [x] Save favorite recipes (heart, `users/{uid}/saved_recipes`) · view saved recipes (swipe / heart to remove, Undo)
+- [x] Recipe details for every recipe: fridge foods used, missing ingredients, steps, add missing to the shopping list, "I cooked it"
+- [x] Home Dashboard with real data: greeting + first name, meals saved this week, fridge / recipes counters, impact card, "Cook before it expires"
+- [x] Meals-saved calculation (1 meal ≈ 400 g) · environmental-impact calculation (CO₂ per category, car km)
+- [x] User statistics screen (week / month / all time, score, last 7 days chart, breakdown); Profile stats use the real values
+- [x] Action history: eaten, cooked, wasted, donated, collected, recipe saved; grouped by day with filters
+- [x] Screens: Home Dashboard, Recipes, Saved Recipes, Statistics (+ Recipe details, Activity history)
+- [x] Tests: `test/features/recipes/`, `test/features/statistics/`, `test/features/home/`, SessionBinder, rules emulator test
+- [ ] Show the profile photo on the Home header (optional)
+
+### Bonus: healthy lifestyle ✅ (2026-11-16, suggested by the professor; spec §8)
+- [x] Calories and macros for every recipe (per portion, Light / Balanced / Rich) in the recipe details and cards
+- [x] Health tags (vegetarian, high protein, low calorie, gluten free) + matching filters on Recipes
+- [x] Health goal in the profile (lose weight, stay balanced, build muscle) ranks the suggestions, `users/{uid}/health/profile`
+- [x] Statistics: calories and macros of the cooked meals per period, meals fitting the goal
+- [x] Weekly healthy challenges (veggie, protein, light, home chef, zero waste) with progress
 
 ## Extras (in the code, not in the final split)
 - [x] Donations (`lib/features/donations/`)
