@@ -15,6 +15,7 @@ After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 After business-name editing (2026-11-13): analyze clean · **191 passed, 0 failed** · 27 rules tests.
 After Membre 5 recipes + dashboard (2026-11-13, `feature/m5-recipes-dashboard`): analyze clean · **248 passed, 0 failed** · 28 rules tests.
 After the Membre 5 healthy-lifestyle bonus (2026-11-16): analyze clean · **277 passed, 0 failed** · 29 rules tests.
+After the Membre 2 donation goals (2026-11-17, `feature/m2-donation-goals`): analyze clean · **330 passed, 0 failed** · 10 new rules tests for `donation_goals` (written, to run with the emulator).
 
 ---
 
@@ -102,6 +103,18 @@ Roles exist (see Phase 2 above); the donation screens still follow the old flow 
 Reported done in the README (`lib/features/fridge/`), with Firestore sync and anti-waste stats on top.
 - [x] Add / edit / delete foods · stock view · categories · search · quantities · expiry dates · sort by expiry · "use first" · total count · consume · details
 - [x] Screens: Fridge, Add Food, Edit Food, Food Details
+
+### Donation goals ✅ (2026-11-17, asked by the professor, branch `feature/m2-donation-goals`)
+- [x] Restaurants and charities publish a goal (food, target + unit, category, optional deadline and reason): Goals tab of their shell
+- [x] Users see the open goals with a progress bar (Donations screen + "Donation goals" screen) and give part of it
+- [x] Give from the fridge (unit converted, the food leaves the stock without counting as eaten) or with food bought outside the app; capped at what is still needed
+- [x] Progress = sum of the contributions (appended with `arrayUnion`, no lost gift when two donors give at once); goal reached at 100 %, then closed to new gifts; also closed by its owner or after the deadline
+- [x] Fridge food details: "<Charity> needs …" banner with a Give button
+- [x] Restaurants follow their goals live (donors, latest gift), close or delete them; the admin sees every goal
+- [x] `firestore.rules` for `donation_goals` + emulator tests (`firestore-tests/rules.test.js`) — **run `npm test` there once** (needs Java + Firebase CLI)
+- [x] Account deletion closes the goals of a restaurant (`UserProfileFirestore.deleteUserData`)
+- [x] Demo data: `dart run tool/seed_demo_goals.dart` (5 demo accounts, Khaoula's fridge + history, 5 goals)
+- [ ] Optional: notify the restaurant when a goal is reached; add the received food to the restaurant's Stock
 
 ## Membre 3 — Notifications & Expiry
 Implemented in the code under the "Membre 4" label (`lib/features/expiry/`, `lib/features/notifications/`).

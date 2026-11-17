@@ -6,7 +6,7 @@ rules_version = '2';
 // A client can only create its profile as "user" or "restaurant" and can never
 // change the role afterwards. "admin" is set by hand in the Firebase console.
 //
-// Tested with the Firebase emulator: `cd firestore-tests && npm test` (29 tests).
+// Tested with the Firebase emulator: `cd firestore-tests && npm test`.
 // NOT DEPLOYED yet. Do not deploy before:
 //  - every teammate's build uses the signed-in uid (no more "demo-user"), and
 //  - the donation screens follow the new flow (restaurants request, the admin
@@ -87,6 +87,48 @@ service cloud.firestore {
       );
 
       allow delete: if signedIn() && resource.data.donorId == request.auth.uid;
+    }
+
+    // Donation goals (Membre 2): a restaurant or charity says what it needs
+    // ("10 kg of rice"), users give until the target is reached. The progress
+    // is the sum of the contributions, which are only ever appended.
+    match /donation_goals/{goalId} {
+      allow read: if signedIn();
+
+      // Only restaurants publish, in their own name, before any gift.
+      allow create: if signedIn() && role() == 'restaurant'
+        && request.resource.data.restaurantId == request.auth.uid
+        && request.resource.data.target > 0
+        && request.resource.data.contributions.size() == 0;
+
+      allow update: if signedIn() && (
+        // The admin moderates.
+        isAdmin()
+        // The owner can only close it.
+        || (resource.data.restaurantId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['closed']))
+        // A user adds exactly one gift in their own name to an open goal,
+        // keeping every previous gift.
+        || (role() == 'user'
+            && resource.data.get('closed', false) == false
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['contributions'])
+            && request.resource.data.contributions.size()
+               == resource.data.contributions.size() + 1
+            && request.resource.data.contributions
+                 .hasAll(resource.data.contributions)
+            && request.resource.data.contributions[
+                 resource.data.contributions.size()].donorId
+               == request.auth.uid
+            && request.resource.data.contributions[
+                 resource.data.contributions.size()].quantity > 0)
+      );
+
+      // The owner deletes a goal nobody gave to yet; the admin any goal.
+      allow delete: if isAdmin()
+        || (signedIn() && resource.data.restaurantId == request.auth.uid
+            && resource.data.contributions.size() == 0);
     }
   }
 }

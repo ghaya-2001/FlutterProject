@@ -4,6 +4,7 @@ import 'package:foodsaver/features/auth/data/auth_repository.dart';
 import 'package:foodsaver/features/auth/data/session_binder.dart';
 import 'package:foodsaver/features/donations/data/donation_repository.dart';
 import 'package:foodsaver/features/fridge/data/fridge_repository.dart';
+import 'package:foodsaver/features/goals/data/goal_repository.dart';
 import 'package:foodsaver/features/list/data/shopping_list_repository.dart';
 import 'package:foodsaver/features/notifications/data/notification_repository.dart';
 import 'package:foodsaver/features/profile/data/user_profile_repository.dart';
@@ -20,6 +21,7 @@ void main() {
   late DonationRepository donations;
   late SavedRecipesRepository savedRecipes;
   late HealthProfileRepository healthProfile;
+  late GoalRepository goals;
   late SessionBinder binder;
 
   setUp(() {
@@ -35,6 +37,7 @@ void main() {
     );
     savedRecipes = SavedRecipesRepository(clock: () => now);
     healthProfile = HealthProfileRepository(clock: () => now);
+    goals = GoalRepository(fridge: fridge);
     binder = SessionBinder(
       auth: auth,
       profiles: profiles,
@@ -44,6 +47,7 @@ void main() {
       donations: donations,
       savedRecipes: savedRecipes,
       healthProfile: healthProfile,
+      goals: goals,
     );
   });
 
@@ -119,5 +123,16 @@ void main() {
     await signUp('r@example.com', role: UserRole.restaurant);
     expect(fridge.items, isEmpty);
     expect(shopping.lists, isEmpty);
+  });
+
+  test('donation goals are reloaded for every role (Membre 2)', () async {
+    await signUp('a@example.com');
+    expect(goals.goals, isNotEmpty);
+
+    await auth.signOut();
+    expect(goals.goals, isEmpty);
+
+    await signUp('r@example.com', role: UserRole.restaurant);
+    expect(goals.goals, isNotEmpty); // restaurants follow the goals too
   });
 }

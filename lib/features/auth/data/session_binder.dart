@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/session/current_user.dart';
 import '../../donations/data/donation_repository.dart';
 import '../../fridge/data/fridge_repository.dart';
+import '../../goals/data/goal_repository.dart';
 import '../../list/data/shopping_list_repository.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../profile/data/user_profile_repository.dart';
@@ -21,6 +22,7 @@ import 'auth_repository.dart';
 /// account's data. Fridge, lists, notifications, saved recipes and the
 /// health goal are only loaded for normal users; restaurants also get their
 /// own (empty at first) fridge as their stock, and admins only need donations.
+/// Donation goals are shared, so every role listens to them.
 class SessionBinder {
   SessionBinder({
     AuthRepository? auth,
@@ -31,6 +33,7 @@ class SessionBinder {
     DonationRepository? donations,
     SavedRecipesRepository? savedRecipes,
     HealthProfileRepository? healthProfile,
+    GoalRepository? goals,
   }) : _auth = auth ?? AuthRepository.instance,
        _profiles = profiles ?? UserProfileRepository.instance,
        _fridge = fridge ?? FridgeRepository.instance,
@@ -38,7 +41,8 @@ class SessionBinder {
        _notifications = notifications ?? NotificationRepository.instance,
        _donations = donations ?? DonationRepository.instance,
        _savedRecipes = savedRecipes ?? SavedRecipesRepository.instance,
-       _healthProfile = healthProfile ?? HealthProfileRepository.instance {
+       _healthProfile = healthProfile ?? HealthProfileRepository.instance,
+       _goals = goals ?? GoalRepository.instance {
     _auth.addListener(_onAuthChanged);
     _onAuthChanged();
   }
@@ -51,6 +55,7 @@ class SessionBinder {
   final DonationRepository _donations;
   final SavedRecipesRepository _savedRecipes;
   final HealthProfileRepository _healthProfile;
+  final GoalRepository _goals;
 
   String? _boundUid;
 
@@ -67,6 +72,7 @@ class SessionBinder {
     _donations.clear();
     _savedRecipes.clear();
     _healthProfile.clear();
+    _goals.clear();
     if (uid != null) {
       unawaited(_connect(uid));
     }
@@ -92,6 +98,7 @@ class SessionBinder {
           break;
       }
       _donations.connect();
+      _goals.connect();
     } catch (error) {
       debugPrint('Could not load the data of the signed-in user: $error');
     }

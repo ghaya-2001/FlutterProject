@@ -81,7 +81,8 @@ class UserProfileFirestore {
       .set({'settings': userSettingsToMap(settings)}, SetOptions(merge: true));
 
   /// Deletes everything the user owns: their sub-collections, their
-  /// donations and the profile document. Run it before deleting the account.
+  /// donations and the profile document, and closes their donation goals.
+  /// Run it before deleting the account.
   Future<void> deleteUserData(String uid) async {
     final refs = <DocumentReference<Map<String, dynamic>>>[];
     for (final name in userCollections) {
@@ -93,6 +94,15 @@ class UserProfileFirestore {
         .where('donorId', isEqualTo: uid)
         .get();
     refs.addAll(donations.docs.map((doc) => doc.reference));
+    // Goals of a restaurant: closed rather than deleted, so the gifts donors
+    // already made stay in their history (Membre 2).
+    final goals = await _db
+        .collection('donation_goals')
+        .where('restaurantId', isEqualTo: uid)
+        .get();
+    for (final goal in goals.docs) {
+      await goal.reference.update({'closed': true});
+    }
     refs.add(_user(uid));
 
     for (var start = 0; start < refs.length; start += _batchSize) {
