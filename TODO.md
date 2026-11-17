@@ -15,7 +15,7 @@ After Phase 2 + roles (2026-11-13): analyze clean · **187 passed, 0 failed**.
 After business-name editing (2026-11-13): analyze clean · **191 passed, 0 failed** · 27 rules tests.
 After Membre 5 recipes + dashboard (2026-11-13, `feature/m5-recipes-dashboard`): analyze clean · **248 passed, 0 failed** · 28 rules tests.
 After the Membre 5 healthy-lifestyle bonus (2026-11-16): analyze clean · **277 passed, 0 failed** · 29 rules tests.
-After the Membre 2 donation goals (2026-11-17, `feature/m2-donation-goals`): analyze clean · **330 passed, 0 failed** · 10 new rules tests for `donation_goals` (written, to run with the emulator).
+After the Membre 2 donation goals (2026-11-17, `feature/m2-donation-goals`): analyze clean · **336 passed, 0 failed** (with the Membre 1 password change) · 10 new rules tests for `donation_goals` (written, to run with the emulator).
 
 ---
 
