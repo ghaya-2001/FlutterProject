@@ -13,6 +13,7 @@ class ShoppingItem {
     this.note = '',
     this.isBought = false,
     this.boughtAt,
+    this.estimatedPrice,
   });
 
   final String id;
@@ -25,7 +26,14 @@ class ShoppingItem {
   final bool isBought;
   final DateTime? boughtAt;
 
+  /// Estimated price of one unit (in DT), or null when the user didn't set it.
+  final double? estimatedPrice;
+
   String get quantityLabel => '$quantity $unit';
+
+  /// Estimated price of the whole line (unit price × quantity), or null.
+  double? get estimatedTotal =>
+      estimatedPrice == null ? null : estimatedPrice! * quantity;
 
   ShoppingItem copyWith({
     String? name,
@@ -36,6 +44,8 @@ class ShoppingItem {
     bool? isBought,
     DateTime? boughtAt,
     bool clearBoughtAt = false,
+    double? estimatedPrice,
+    bool clearEstimatedPrice = false,
   }) {
     return ShoppingItem(
       id: id,
@@ -47,6 +57,9 @@ class ShoppingItem {
       note: note ?? this.note,
       isBought: isBought ?? this.isBought,
       boughtAt: clearBoughtAt ? null : (boughtAt ?? this.boughtAt),
+      estimatedPrice: clearEstimatedPrice
+          ? null
+          : (estimatedPrice ?? this.estimatedPrice),
     );
   }
 }

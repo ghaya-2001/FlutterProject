@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/shopping_list_repository.dart';
+import '../domain/budget.dart';
 import '../domain/shopping_category.dart';
 import '../domain/shopping_item.dart';
 import 'widgets/name_input_dialog.dart';
@@ -31,6 +32,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _noteController;
+  late final TextEditingController _priceController;
   late int _quantity;
   late String _unit;
   late ShoppingCategory _category;
@@ -43,6 +45,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
     final item = widget.initialItem;
     _nameController = TextEditingController(text: item?.name ?? '');
     _noteController = TextEditingController(text: item?.note ?? '');
+    final price = item?.estimatedPrice;
+    _priceController = TextEditingController(
+      text: price == null ? '' : price.toStringAsFixed(2),
+    );
     _quantity = item?.quantity ?? 1;
     _unit = item?.unit ?? shoppingUnits.first;
     _category = item?.category ?? _repository.categories.first;
@@ -52,6 +58,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
   void dispose() {
     _nameController.dispose();
     _noteController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -81,6 +88,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
     final name = _nameController.text.trim();
     final note = _noteController.text.trim();
+    final price = parsePrice(_priceController.text);
     final initialItem = widget.initialItem;
 
     if (initialItem != null) {
@@ -92,6 +100,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
           quantity: _quantity,
           unit: _unit,
           note: note,
+          estimatedPrice: price,
+          clearEstimatedPrice: price == null,
         ),
       );
     } else {
@@ -102,10 +112,24 @@ class _AddItemScreenState extends State<AddItemScreen> {
         quantity: _quantity,
         unit: _unit,
         note: note,
+        estimatedPrice: price,
       );
     }
 
     Navigator.of(context).pop(name);
+  }
+
+  /// "Estimated total: 6.00 DT" under the price field, or null.
+  String? get _totalLabel {
+    try {
+      final price = parsePrice(_priceController.text);
+      if (price == null) {
+        return null;
+      }
+      return 'Estimated total: ${formatMoney(price * _quantity)}';
+    } on FormatException {
+      return null;
+    }
   }
 
   @override
@@ -263,6 +287,41 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       ),
                   ],
                 ),
+                const SizedBox(height: 22),
+                const _SectionLabel('Estimated price per unit (optional)'),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const ValueKey('item-price-field'),
+                  controller: _priceController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onChanged: (_) => setState(() {}),
+                  validator: (value) {
+                    try {
+                      parsePrice(value ?? '');
+                    } on FormatException {
+                      return 'Enter a valid price, e.g. 2.5';
+                    }
+                    return null;
+                  },
+                  decoration: _inputDecoration(
+                    hint: 'e.g. 2.50',
+                    icon: Icons.payments_outlined,
+                  ).copyWith(suffixText: budgetCurrency),
+                ),
+                if (_totalLabel != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _totalLabel!,
+                    key: const ValueKey('item-price-total'),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 22),
                 const _SectionLabel('Category'),
                 const SizedBox(height: 10),

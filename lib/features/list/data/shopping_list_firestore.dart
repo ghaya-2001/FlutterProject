@@ -102,6 +102,7 @@ Map<String, dynamic> shoppingItemToMap(ShoppingItem item) {
         ? null
         : Timestamp.fromDate(item.boughtAt!),
     'createdAt': Timestamp.fromDate(item.createdAt),
+    'estimatedPrice': item.estimatedPrice,
   };
 }
 
@@ -138,6 +139,8 @@ ShoppingItem shoppingItemFromMap(
     isBought: map['isBought'] as bool? ?? false,
     boughtAt: _date(map['boughtAt']),
     createdAt: _date(map['createdAt']) ?? DateTime.now(),
+    // Missing in lists saved before prices existed.
+    estimatedPrice: (map['estimatedPrice'] as num?)?.toDouble(),
   );
 }
 

@@ -130,6 +130,7 @@ Reported done in the README (`lib/features/list/`).
 - [x] Create list · add / delete items · mark bought · categories · view list · automatic purchase updates
 - [x] Screens: Shopping List, Add Item
 - [x] Fixed on `main` (the 3 `list_screen_test.dart` failures)
+- [x] Budget & food spending analysis (professor's feedback, 2026-11-16, branch `feature/m4-budget-spending`): estimated price per item, weekly/monthly budget, purchases recorded when items are ticked (`users/{uid}/purchases`), Budget & spending screen (overview, donut chart per food category, insights, purchases with editable price). Plain calculations, no ML. Tests: `spending_analysis_test.dart`, `budget_repository_test.dart`, `budget_screen_test.dart`
 
 ## Membre 5 — Recipes & Dashboard ✅ (2026-11-13, branch `feature/m5-recipes-dashboard`)
 Spec: [docs/SPEC_MEMBRE5.md](docs/SPEC_MEMBRE5.md). Code: `lib/features/recipes/`, `lib/features/statistics/`, `lib/features/home/`.
