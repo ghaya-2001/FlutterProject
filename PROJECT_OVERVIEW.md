@@ -60,7 +60,7 @@ features/<feature>/
 | `auth` | Membre 1 | `AppUser`, `AuthFailure`, form validators, `passwordRules` (shown live by `PasswordChecklist`) | `AuthRepository`, `AuthFirebase` | `SplashScreen`, `LoginScreen`, `RegisterScreen`, `ResetPasswordScreen` (all use `AuthRepository`) |
 | `home` | Membre 5 | — | — | `FoodSaverHomePage` (dashboard with real data + bottom nav) |
 | `fridge` | Membre 2 | `FoodItem`, `FoodCategory`, `FridgeEvent`, `FridgeStats`, formatters | `FridgeRepository`, `FridgeFirestore` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
-| `donations` | Membre 3 | `Donation`, `DonationRequest`, `Beneficiary` | `DonationRepository`, `DonationFirestore` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen` |
+| `donations` | Membre 3 | `Donation`, `DonationRequest`, `Beneficiary`, `donation_leaderboard.dart` | `DonationRepository`, `DonationFirestore` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen`, `DonationLeaderboardScreen` |
 | `goals` | Membre 2 | `DonationGoal`, `GoalContribution`, unit conversion, food ↔ goal matching | `GoalRepository`, `GoalFirestore` | `DonationGoalsScreen`, `GoalDetailsScreen`, `CreateGoalScreen`, `RestaurantGoalsTab`, contribute sheet |
 | `list` | Membre 4 | `ShoppingList`, `ShoppingItem`, `ShoppingCategory` | `ShoppingListRepository`, `ShoppingListFirestore` | `ListScreen`, `AddItemScreen` |
 | `expiry` | Membre 4 | `expiry_alerts.dart` (7d / 3d / same-day rules) | — (computed from the fridge) | `ExpiringSoonScreen` |

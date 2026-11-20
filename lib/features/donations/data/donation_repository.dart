@@ -9,6 +9,7 @@ import '../../fridge/domain/fridge_formatters.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../domain/beneficiary.dart';
 import '../domain/donation.dart';
+import '../domain/donation_leaderboard.dart';
 import '../../../core/firebase/firebase_setup.dart';
 import '../../../core/session/current_user.dart';
 import 'donation_firestore.dart';
@@ -140,6 +141,14 @@ class DonationRepository extends ChangeNotifier {
       .length;
 
   int get collectedCount => donations
+      .where((donation) => donation.status == DonationStatus.collected)
+      .length;
+
+  /// Most donated foods of every user, counting completed donations only.
+  List<LeaderboardEntry> get leaderboard => donationLeaderboard(_donations);
+
+  /// Completed donations of every user (for the leaderboard summary).
+  int get completedDonationCount => _donations
       .where((donation) => donation.status == DonationStatus.collected)
       .length;
 

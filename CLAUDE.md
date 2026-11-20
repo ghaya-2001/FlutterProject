@@ -59,6 +59,7 @@ dart run tool/generate_app_icon.dart && dart run flutter_launcher_icons   # rege
 **Data rules**
 - The fridge is the single source of truth for expiry dates. Expiry alerts are calculated by `features/expiry/domain/expiry_alerts.dart` every time and are never stored.
 - Categories are saved in Firestore by name only. Their icon and colour come from the app.
+- The donation leaderboard is computed from the shared `donations` collection (`DonationRepository.leaderboard` → `donations/domain/donation_leaderboard.dart`): only `collected` donations count, grouped by trimmed lower-case food name and unit (different units are never added together), sorted by number of donations, then quantity. Nothing is stored.
 - New Firestore paths go under `users/{userId}/...`, except shared data such as `donations/`. When you add one, update `firestore.rules` (auth-based with roles; the old open dev rules are a comment at the bottom) and the schema table in `README.md`.
 
 **Navigation**

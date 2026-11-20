@@ -13,6 +13,7 @@ import '../domain/donation.dart';
 import 'create_donation_screen.dart';
 import 'donation_details_screen.dart';
 import 'donation_history_screen.dart';
+import 'donation_leaderboard_screen.dart';
 import 'widgets/donation_widgets.dart';
 
 /// Main donations screen.
@@ -114,6 +115,18 @@ class _DonationsScreenState extends State<DonationsScreen> {
                 ScreenHeader(
                   title: 'Donations',
                   actions: [
+                    HeaderIconButton(
+                      key: const ValueKey('donation-leaderboard-button'),
+                      icon: Icons.emoji_events_outlined,
+                      tooltip: 'Top donated foods',
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => DonationLeaderboardScreen(
+                            repository: _repository,
+                          ),
+                        ),
+                      ),
+                    ),
                     HeaderIconButton(
                       icon: Icons.history_rounded,
                       tooltip: 'Donation history',
