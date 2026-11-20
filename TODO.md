@@ -89,6 +89,7 @@ After the Membre 2 donation goals (2026-11-17, `feature/m2-donation-goals`): ana
 ---
 
 ## Donations workflow with roles — handoff spec (not assigned)
+- [x] Donation leaderboard (2026-11-20, branch `feature/donation-leaderboard`): **Top donated foods** screen from the trophy icon on Donations; ranks the foods of collected donations of every user by number of donations, then total quantity (grouped by name and unit). No new Firestore data. Tests: `test/features/donations/donation_leaderboard_test.dart`
 Roles exist (see Phase 2 above); the donation screens still follow the old flow where the donor accepts requests on their own donation, and restaurants are `sampleBeneficiaries`. Target flow, agreed 2026-11-13:
 - [ ] A user creates a donation; it appears as available to every restaurant
 - [x] Restaurants browse available donations and send a request (optional message) from the **Donations** tab of `RoleShell` (`RestaurantDonationsTab`, `DonationRepository.refresh()`); the beneficiary is the restaurant account (`businessName`). Test: `restaurant_donations_tab_test.dart`

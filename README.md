@@ -166,7 +166,7 @@ Code: `lib/features/donations/`
 | --- | --- |
 | `domain/` | `Donation`, `DonationRequest`, `Beneficiary` (sample restaurants / charities), statuses |
 | `data/` | `DonationRepository` (ChangeNotifier, in-memory store, linked to the fridge) |
-| `presentation/` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen` |
+| `presentation/` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen`, `DonationLeaderboardScreen` |
 
 | Feature (cahier des charges) | Where |
 | --- | --- |
@@ -178,6 +178,7 @@ Code: `lib/features/donations/`
 | Acceptation / refus d'une demande | Donation Details → Accept / Refuse |
 | Statut : disponible, réservé, récupéré | Accept → Reserved, "Mark as collected" → Collected |
 | Historique des dons | History icon on Donations, or Profile → My donations |
+| Classement des aliments les plus donnés | Trophy icon on Donations → **Top donated foods**: completed (collected) donations of every user, grouped by food name and unit, with total quantity and number of donations, most donated first (`donations/domain/donation_leaderboard.dart`) |
 
 Rules: the donated quantity is removed from the fridge; cancelling an available donation puts it back.
 Beneficiaries are restaurant accounts; the old simulated requests were removed from the user screens.
