@@ -62,7 +62,7 @@ features/<feature>/
 | `fridge` | Membre 2 | `FoodItem`, `FoodCategory`, `FridgeEvent`, `FridgeStats`, formatters | `FridgeRepository`, `FridgeFirestore` | `FridgeScreen`, `AddFoodScreen`, `EditFoodScreen`, `FoodDetailsScreen`, `FridgeStatsScreen` |
 | `donations` | Membre 3 | `Donation`, `DonationRequest`, `Beneficiary` | `DonationRepository`, `DonationFirestore` | `DonationsScreen`, `CreateDonationScreen`, `DonationDetailsScreen`, `DonationHistoryScreen` |
 | `goals` | Membre 2 | `DonationGoal`, `GoalContribution`, unit conversion, food ↔ goal matching | `GoalRepository`, `GoalFirestore` | `DonationGoalsScreen`, `GoalDetailsScreen`, `CreateGoalScreen`, `RestaurantGoalsTab`, contribute sheet |
-| `list` | Membre 4 | `ShoppingList`, `ShoppingItem`, `ShoppingCategory` | `ShoppingListRepository`, `ShoppingListFirestore` | `ListScreen`, `AddItemScreen` |
+| `list` | Membre 4 | `ShoppingList`, `ShoppingItem`, `ShoppingCategory`, `ShoppingBudget`, `Purchase`, `spending_analysis` | `ShoppingListRepository`, `ShoppingListFirestore`, `BudgetRepository`, `BudgetFirestore` | `ListScreen`, `AddItemScreen`, `BudgetScreen` |
 | `expiry` | Membre 4 | `expiry_alerts.dart` (7d / 3d / same-day rules) | — (computed from the fridge) | `ExpiringSoonScreen` |
 | `notifications` | Membre 4 | `AppNotification` | `NotificationRepository`, `NotificationFirestore`, `NotificationService` | `NotificationsScreen` |
 | `chatbot` | Membre 4 | `chatbot_engine.dart` (predefined questions + keyword matching) | — | `ChatbotScreen` |
@@ -112,7 +112,8 @@ Each `*Firestore` class wraps one part of the database and holds top-level `xToM
 | `users/{userId}` | profile (`displayName`, `email`, `photo`, `createdAt`, `settings`), custom food/shopping categories, selected shopping list, read notification ids |
 | `users/{userId}/fridge_items/{id}` | one document per food |
 | `users/{userId}/fridge_history/{id}` | consumed / wasted events (stats) |
-| `users/{userId}/shopping_lists/{listId}` | one document per list, items embedded as an array |
+| `users/{userId}/shopping_lists/{listId}` | one document per list, items embedded as an array (optional `estimatedPrice` per unit) |
+| `users/{userId}/purchases/{id}` | spending history: one document per bought item (amount may be null); the budget is `users/{userId}.shoppingBudget` |
 | `users/{userId}/notifications/{id}` | donation events |
 | `users/{userId}/saved_recipes/{recipeId}` | favorite recipes (`savedAt`) |
 | `users/{userId}/health/profile` | health goal (`goal`, `updatedAt`) |

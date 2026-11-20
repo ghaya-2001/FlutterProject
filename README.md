@@ -132,9 +132,9 @@ Code: `lib/features/list/`
 
 | Folder | Content |
 | --- | --- |
-| `domain/` | `ShoppingList`, `ShoppingItem`, `ShoppingCategory` models |
-| `data/` | `ShoppingListRepository` (ChangeNotifier, in-memory store) |
-| `presentation/` | `ListScreen` (Shopping List), `AddItemScreen` (Add Item / Edit Item) |
+| `domain/` | `ShoppingList`, `ShoppingItem`, `ShoppingCategory` models; budget: `ShoppingBudget`, `Purchase`, `spending_analysis.dart` (calculations and insights) |
+| `data/` | `ShoppingListRepository`, `BudgetRepository` (ChangeNotifier) and their Firestore classes |
+| `presentation/` | `ListScreen` (Shopping List), `AddItemScreen` (Add Item / Edit Item), `BudgetScreen` (Budget & spending) |
 
 Features:
 
@@ -147,7 +147,16 @@ Features:
 - View the list grouped by category, with "To buy" and "Bought" sections
 - Automatic purchase updates: progress bar, counters, bought items move to the "Bought" section, "Mark all as bought" and "Clear bought items"
 
-Tests: `test/features/list/`
+### Budget & food spending analysis
+
+- **Estimated price** (optional) per unit on each item; the item shows its estimated total (unit price × quantity).
+- **Budget:** weekly (Monday–Sunday) or monthly food budget, set from the wallet icon on the Shopping list or the budget card.
+- **Purchases:** ticking an item records a purchase (name, category, quantity, date, amount = estimated total). The snackbar offers "Edit price" to enter what was really paid; unticking removes the purchase. Purchases are kept apart from the lists, so "Clear bought items" does not erase the spending history.
+- **Budget & spending screen:** budget, amount spent, remaining budget, usage % (green, orange from 80 %, red when over), estimated cost of what is still to buy, a donut chart and bars of the spending per food category (amount, % of spending, % of budget, highest / lowest), simple insights, and the list of purchases of the period (tap one to add or change its price).
+- **Analysis (no machine learning):** sums per category for the current week or month, shares of the spending and of the budget, highest and lowest category, projection (spent + still to buy), and a comparison with the previous period ("higher than last month"), only when that period has data. Only increases are reported, because the current period is not finished.
+- **Missing prices:** purchases without a price are listed with "Add price" and are not counted in the totals; the insights say how many are missing.
+
+Tests: `test/features/list/` (including `spending_analysis_test.dart`, `budget_repository_test.dart`, `budget_screen_test.dart`)
 
 ## Membre 3 — Gestion des Dons Alimentaires (Donations module)
 
@@ -226,10 +235,11 @@ The fridge, shopping lists, donations and notifications are saved in **Cloud Fir
 
 | Collection | Content | Code |
 | --- | --- | --- |
-| `users/{userId}` | `displayName`, `email`, `photo` (base64 JPEG), `createdAt`, `settings`, `role` (`user` / `restaurant` / `admin`), `businessName` (restaurants), `customFoodCategories`, `fridgeSeeded`, `importedShoppingItemIds`, `customShoppingCategories`, `selectedShoppingListId`, `readNotificationIds` | — |
+| `users/{userId}` | `displayName`, `email`, `photo` (base64 JPEG), `createdAt`, `settings`, `role` (`user` / `restaurant` / `admin`), `businessName` (restaurants), `customFoodCategories`, `fridgeSeeded`, `importedShoppingItemIds`, `customShoppingCategories`, `selectedShoppingListId`, `shoppingBudget` (`amount`, `period`), `readNotificationIds` | — |
 | `users/{userId}/fridge_items/{id}` | `name`, `category`, `quantity`, `unit`, `expiryDate`, `addedAt`, `note` (listened to in real time) | `lib/features/fridge/data/fridge_firestore.dart` |
 | `users/{userId}/fridge_history/{id}` | `type` (consumed / wasted), `foodName`, `category`, `quantity`, `unit`, `at`, `daysLeft`, `recipe` | `lib/features/fridge/data/fridge_firestore.dart` |
-| `users/{userId}/shopping_lists/{listId}` | `name`, `createdAt`, `items: [...]` | `lib/features/list/data/shopping_list_firestore.dart` |
+| `users/{userId}/shopping_lists/{listId}` | `name`, `createdAt`, `items: [...]` (each item can have `estimatedPrice`, per unit) | `lib/features/list/data/shopping_list_firestore.dart` |
+| `users/{userId}/purchases/{id}` | bought items: `itemId`, `listId`, `name`, `category`, `quantity`, `unit`, `amount` (null = no price), `date` | `lib/features/list/data/budget_firestore.dart` |
 | `users/{userId}/notifications/{id}` | donation events: `type`, `title`, `body`, `donationId`, `createdAt` | `lib/features/notifications/data/notification_firestore.dart` |
 | `users/{userId}/saved_recipes/{recipeId}` | favorite recipes: `savedAt` (the recipe itself comes from the app) | `lib/features/recipes/data/saved_recipes_firestore.dart` |
 | `users/{userId}/health/profile` | health goal: `goal`, `updatedAt` | `lib/features/recipes/data/health_profile_firestore.dart` |
