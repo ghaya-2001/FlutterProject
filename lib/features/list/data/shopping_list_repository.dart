@@ -4,6 +4,7 @@ import '../../../core/firebase/firebase_setup.dart';
 import '../domain/shopping_category.dart';
 import '../domain/shopping_item.dart';
 import '../domain/shopping_list.dart';
+import 'budget_repository.dart';
 import 'shopping_list_firestore.dart';
 
 /// Store for the shopping lists module.
@@ -19,6 +20,7 @@ class ShoppingListRepository extends ChangeNotifier {
   ShoppingListRepository({
     bool seed = true,
     this.remote,
+    this.budget,
     bool autoConnect = true,
   }) : _seedDemo = seed {
     if (remote != null) {
@@ -32,6 +34,7 @@ class ShoppingListRepository extends ChangeNotifier {
 
   static final ShoppingListRepository instance = ShoppingListRepository(
     remote: FirebaseSetup.isReady ? ShoppingListFirestore() : null,
+    budget: BudgetRepository.instance,
     autoConnect: false,
   );
 
@@ -39,6 +42,10 @@ class ShoppingListRepository extends ChangeNotifier {
 
   /// Firestore storage; null in tests or when Firebase is not configured.
   final ShoppingListFirestore? remote;
+
+  /// Records what is spent when items are bought (budget feature).
+  /// Null in tests that don't need it.
+  final BudgetRepository? budget;
 
   /// True while the lists are being loaded from Firestore.
   bool isLoading = false;
@@ -64,6 +71,11 @@ class ShoppingListRepository extends ChangeNotifier {
   /// Items still to buy across every list.
   int get totalRemainingCount =>
       _lists.fold(0, (sum, list) => sum + list.remainingCount);
+
+  /// Every item not bought yet, on every list (for the budget estimate).
+  List<ShoppingItem> get allPendingItems => [
+    for (final list in _lists) ...list.pendingItems,
+  ];
 
   ShoppingList? listById(String id) {
     for (final list in _lists) {
@@ -150,6 +162,8 @@ class ShoppingListRepository extends ChangeNotifier {
   /// If an item with the same name, category and unit already exists, the
   /// quantities are merged instead of creating a duplicate. A bought duplicate
   /// is moved back to the "to buy" section.
+  ///
+  /// [estimatedPrice] is the price of one unit, in DT (optional).
   ShoppingItem addItem(
     String listId, {
     required String name,
@@ -157,6 +171,7 @@ class ShoppingListRepository extends ChangeNotifier {
     int quantity = 1,
     String unit = 'pcs',
     String note = '',
+    double? estimatedPrice,
   }) {
     final list = _requireList(listId);
     final trimmed = name.trim();
@@ -166,6 +181,7 @@ class ShoppingListRepository extends ChangeNotifier {
     if (quantity < 1) {
       throw ArgumentError('Quantity must be at least 1');
     }
+    _validatePrice(estimatedPrice);
 
     final existingIndex = list.items.indexWhere(
       (item) =>
@@ -181,6 +197,7 @@ class ShoppingListRepository extends ChangeNotifier {
         note: note.trim().isEmpty ? existing.note : note.trim(),
         isBought: false,
         clearBoughtAt: true,
+        estimatedPrice: estimatedPrice,
       );
       list.items[existingIndex] = merged;
       notifyListeners();
@@ -196,6 +213,7 @@ class ShoppingListRepository extends ChangeNotifier {
       unit: unit,
       note: note.trim(),
       createdAt: DateTime.now(),
+      estimatedPrice: estimatedPrice,
     );
     list.items.add(item);
     notifyListeners();
@@ -215,6 +233,7 @@ class ShoppingListRepository extends ChangeNotifier {
     if (updated.quantity < 1) {
       throw ArgumentError('Quantity must be at least 1');
     }
+    _validatePrice(updated.estimatedPrice);
     list.items[index] = updated.copyWith(
       name: updated.name.trim(),
       note: updated.note.trim(),
@@ -247,6 +266,8 @@ class ShoppingListRepository extends ChangeNotifier {
     _saveList(list);
   }
 
+  /// Ticks or unticks an item. Ticking records a purchase in [budget];
+  /// unticking removes it again.
   void toggleBought(String listId, String itemId) {
     final list = _requireList(listId);
     final index = list.items.indexWhere((item) => item.id == itemId);
@@ -254,23 +275,34 @@ class ShoppingListRepository extends ChangeNotifier {
       return;
     }
     final item = list.items[index];
-    list.items[index] = item.isBought
+    final updated = item.isBought
         ? item.copyWith(isBought: false, clearBoughtAt: true)
         : item.copyWith(isBought: true, boughtAt: DateTime.now());
+    list.items[index] = updated;
     notifyListeners();
     _saveList(list);
+    if (updated.isBought) {
+      budget?.recordPurchase(updated, listId);
+    } else {
+      budget?.undoPurchaseOf(itemId);
+    }
   }
 
   void markAllBought(String listId) {
     final list = _requireList(listId);
     final now = DateTime.now();
+    final newlyBought = <ShoppingItem>[];
     for (var i = 0; i < list.items.length; i++) {
       if (!list.items[i].isBought) {
         list.items[i] = list.items[i].copyWith(isBought: true, boughtAt: now);
+        newlyBought.add(list.items[i]);
       }
     }
     notifyListeners();
     _saveList(list);
+    for (final item in newlyBought) {
+      budget?.recordPurchase(item, listId);
+    }
   }
 
   /// Removes every bought item from the list and returns them.
@@ -366,6 +398,12 @@ class ShoppingListRepository extends ChangeNotifier {
   // Helpers
   // ---------------------------------------------------------------------------
 
+  void _validatePrice(double? price) {
+    if (price != null && (price < 0 || price.isNaN || price.isInfinite)) {
+      throw ArgumentError('The price cannot be negative');
+    }
+  }
+
   ShoppingList _requireList(String listId) {
     final list = listById(listId);
     if (list == null) {
@@ -380,6 +418,7 @@ class ShoppingListRepository extends ChangeNotifier {
 
   /// Loads the signed-in user's lists (after [clear]).
   void connect() {
+    budget?.connect();
     if (remote != null) {
       _loadRemote();
     } else if (_seedDemo) {
@@ -390,6 +429,7 @@ class ShoppingListRepository extends ChangeNotifier {
 
   /// Forgets the previous user's lists.
   void clear() {
+    budget?.clear();
     _lists.clear();
     _categories
       ..clear()

@@ -3,11 +3,16 @@ import 'package:flutter/material.dart';
 import '../../fridge/presentation/fridge_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../data/budget_repository.dart';
 import '../data/shopping_list_repository.dart';
+import '../domain/budget.dart';
 import '../domain/shopping_category.dart';
 import '../domain/shopping_item.dart';
 import '../domain/shopping_list.dart';
+import '../domain/spending_analysis.dart';
 import 'add_item_screen.dart';
+import 'budget_screen.dart';
+import 'widgets/budget_dialogs.dart';
 import 'widgets/name_input_dialog.dart';
 
 enum _ListAction {
@@ -20,10 +25,13 @@ enum _ListAction {
 }
 
 class ListScreen extends StatefulWidget {
-  const ListScreen({super.key, this.repository});
+  const ListScreen({super.key, this.repository, this.budget});
 
   /// Defaults to [ShoppingListRepository.instance]; injectable for tests.
   final ShoppingListRepository? repository;
+
+  /// Defaults to the repository's budget, then [BudgetRepository.instance].
+  final BudgetRepository? budget;
 
   @override
   State<ListScreen> createState() => _ListScreenState();
@@ -35,6 +43,9 @@ class _ListScreenState extends State<ListScreen> {
 
   ShoppingListRepository get _repository =>
       widget.repository ?? ShoppingListRepository.instance;
+
+  BudgetRepository get _budget =>
+      widget.budget ?? _repository.budget ?? BudgetRepository.instance;
 
   // ---------------------------------------------------------------------------
   // Actions
@@ -139,6 +150,52 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
+  /// Ticks or unticks an item. After ticking, shows what was recorded in the
+  /// budget, with a button to set the real price.
+  void _toggleBought(ShoppingList list, ShoppingItem item) {
+    _repository.toggleBought(list.id, item.id);
+    if (item.isBought || _repository.budget == null) {
+      return;
+    }
+    final purchase = _budget.latestPurchaseFor(item.id);
+    if (purchase == null) {
+      return;
+    }
+    final amount = purchase.amount;
+    _showSnackBar(
+      amount == null
+          ? '${item.name} bought · no price yet'
+          : '${item.name} bought · ${formatMoney(amount)}',
+      actionLabel: amount == null ? 'Add price' : 'Edit price',
+      onAction: () => _editPurchasePrice(purchase.id),
+    );
+  }
+
+  Future<void> _editPurchasePrice(String purchaseId) async {
+    final purchase = _budget.purchaseById(purchaseId);
+    if (purchase == null) {
+      return;
+    }
+    final result = await showPriceDialog(
+      context,
+      itemName: purchase.name,
+      current: purchase.amount,
+    );
+    if (result == null || !mounted) {
+      return;
+    }
+    _budget.updatePurchaseAmount(purchaseId, result.amount);
+  }
+
+  void _openBudget() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            BudgetScreen(budget: _budget, shopping: _repository),
+      ),
+    );
+  }
+
   void _clearBought(ShoppingList list) {
     final removed = _repository.clearBought(list.id);
     if (removed.isEmpty) {
@@ -171,20 +228,26 @@ class _ListScreenState extends State<ListScreen> {
     }
   }
 
-  void _showSnackBar(String message, {VoidCallback? onUndo}) {
+  void _showSnackBar(
+    String message, {
+    VoidCallback? onUndo,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
+    final action = onUndo ?? onAction;
     messenger.showSnackBar(
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        action: onUndo == null
+        action: action == null
             ? null
             : SnackBarAction(
-                label: 'Undo',
+                label: onUndo != null ? 'Undo' : actionLabel ?? 'Edit',
                 textColor: const Color(0xFFB9FBC0),
-                onPressed: onUndo,
+                onPressed: action,
               ),
       ),
     );
@@ -216,7 +279,7 @@ class _ListScreenState extends State<ListScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _repository,
+      listenable: Listenable.merge([_repository, _budget]),
       builder: (context, _) {
         final list = _repository.selectedList;
 
@@ -243,6 +306,15 @@ class _ListScreenState extends State<ListScreen> {
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1B1B1B),
                           ),
+                        ),
+                      ),
+                      IconButton(
+                        key: const ValueKey('open-budget-button'),
+                        tooltip: 'Budget & spending',
+                        onPressed: _openBudget,
+                        icon: const Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: Color(0xFF2E7D32),
                         ),
                       ),
                       _buildMenu(list),
@@ -401,6 +473,12 @@ class _ListScreenState extends State<ListScreen> {
         _buildListSelector(list),
         const SizedBox(height: 16),
         _SummaryCard(list: list),
+        const SizedBox(height: 12),
+        _BudgetCard(
+          report: _budget.reportFor(_repository.allPendingItems),
+          list: list,
+          onTap: _openBudget,
+        ),
         if (presentCategories.isNotEmpty) ...[
           const SizedBox(height: 18),
           _buildCategoryFilter(presentCategories, filter),
@@ -576,7 +654,7 @@ class _ListScreenState extends State<ListScreen> {
       ),
       child: _ShoppingItemTile(
         item: item,
-        onToggle: () => _repository.toggleBought(list.id, item.id),
+        onToggle: () => _toggleBought(list, item),
         onEdit: () => _openAddItem(list, item: item),
         onDelete: () => _deleteItem(list, item),
       ),
@@ -675,6 +753,119 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
+/// Small budget summary under the list summary; opens the Budget screen.
+class _BudgetCard extends StatelessWidget {
+  const _BudgetCard({
+    required this.report,
+    required this.list,
+    required this.onTap,
+  });
+
+  final SpendingReport report;
+  final ShoppingList list;
+  final VoidCallback onTap;
+
+  String get _title {
+    if (!report.hasBudget) {
+      return 'Set a food budget';
+    }
+    final remaining = report.remaining!;
+    return report.isOverBudget
+        ? '${formatMoney(-remaining)} over budget'
+        : '${formatMoney(remaining)} left ${periodName(report.period)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listEstimate = list.pendingItems.fold(
+      0.0,
+      (sum, item) => sum + (item.estimatedTotal ?? 0),
+    );
+    final usage = report.usage;
+    final details = [
+      'Spent ${formatMoney(report.totalSpent)} ${periodName(report.period)}',
+      if (listEstimate > 0) 'this list ≈ ${formatMoney(listEstimate)}',
+    ].join(' · ');
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        key: const ValueKey('budget-card'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 20,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: report.isOverBudget
+                                ? const Color(0xFFC62828)
+                                : const Color(0xFF1B1B1B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          details,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ],
+              ),
+              if (usage != null) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: usage.clamp(0, 1).toDouble(),
+                    minHeight: 8,
+                    backgroundColor: const Color(0xFFF0F0F0),
+                    valueColor: AlwaysStoppedAnimation(budgetUsageColor(usage)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ShoppingItemTile extends StatelessWidget {
   const _ShoppingItemTile({
     required this.item,
@@ -690,7 +881,12 @@ class _ShoppingItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final details = [item.quantityLabel, item.category.name].join(' · ');
+    final total = item.estimatedTotal;
+    final details = [
+      item.quantityLabel,
+      item.category.name,
+      if (total != null) '≈ ${formatMoney(total)}',
+    ].join(' · ');
 
     return Container(
       decoration: BoxDecoration(

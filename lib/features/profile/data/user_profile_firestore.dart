@@ -26,6 +26,7 @@ class UserProfileFirestore {
     'fridge_items',
     'fridge_history',
     'shopping_lists',
+    'purchases',
     'notifications',
     'saved_recipes',
     'health',
